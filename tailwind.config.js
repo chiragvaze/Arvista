@@ -1,0 +1,111 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  darkMode: ['class', '[data-theme="dark"]'],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#F9F2ED',
+          100: '#EDD9CC',
+          200: '#D9B19A',
+          300: '#C18A67',
+          400: '#A6643D',
+          500: '#8B4726',
+          600: '#6B3620',
+          700: '#4A2618',
+          800: '#2D1810',
+          900: '#1A0E0A',
+        },
+        secondary: {
+          50: '#F0F7FF',
+          100: '#DBE9FC',
+          200: '#B5D4F7',
+          300: '#87B7F0',
+          400: '#5C9AE6',
+          500: '#3B7DD9',
+          600: '#2557A0',
+          700: '#1A4270',
+          800: '#102B4A',
+          900: '#0A1A2E',
+        },
+        neutral: {
+          0: '#FFFFFF',
+          50: '#FAFAFA',
+          100: '#F2F2F2',
+          200: '#E3E3E3',
+          300: '#C7C7C7',
+          400: '#A3A3A3',
+          500: '#808080',
+          600: '#5C5C5C',
+          700: '#404040',
+          800: '#2B2B2B',
+          900: '#1A1A1A',
+          950: '#0D0D0D',
+        },
+        accent: {
+          gold: '#D4AF37',
+          amber: '#F59E0B',
+          emerald: '#10B981',
+          ruby: '#DC2626',
+          amethyst: '#8B5CF6',
+          rose: '#F43F5E',
+        },
+      },
+      fontFamily: {
+        display: ['Cormorant Garamond', 'serif'],
+        body: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      fontSize: {
+        'display-xl': ['96px', { lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: '300' }],
+        'display-lg': ['72px', { lineHeight: '1.1', letterSpacing: '-0.015em', fontWeight: '300' }],
+        'display-md': ['56px', { lineHeight: '1.15', letterSpacing: '-0.01em', fontWeight: '400' }],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '112': '28rem',
+        '128': '32rem',
+      },
+      borderRadius: {
+        '2xl': '32px',
+      },
+      boxShadow: {
+        'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.04)',
+        'sm': '0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.04)',
+        'base': '0 4px 8px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04)',
+        'md': '0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 8px -2px rgba(0, 0, 0, 0.06)',
+        'lg': '0 16px 32px -8px rgba(0, 0, 0, 0.12), 0 8px 16px -4px rgba(0, 0, 0, 0.08)',
+        'xl': '0 24px 48px -12px rgba(0, 0, 0, 0.18), 0 16px 32px -8px rgba(0, 0, 0, 0.12)',
+        '2xl': '0 32px 64px -16px rgba(0, 0, 0, 0.24), 0 24px 48px -12px rgba(0, 0, 0, 0.16)',
+        'primary': '0 8px 24px -4px rgba(139, 71, 38, 0.3)',
+        'secondary': '0 8px 24px -4px rgba(37, 87, 160, 0.3)',
+      },
+      animation: {
+        'shimmer': 'shimmer 3s linear infinite',
+        'float': 'float 30s ease-in-out infinite',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0) translateX(0)' },
+          '25%': { transform: 'translateY(-30px) translateX(15px)' },
+          '50%': { transform: 'translateY(0) translateX(0)' },
+          '75%': { transform: 'translateY(30px) translateX(-15px)' },
+        },
+      },
+      backdropBlur: {
+        xs: '2px',
+      },
+    },
+  },
+  plugins: [],
+}
