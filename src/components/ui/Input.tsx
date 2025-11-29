@@ -164,7 +164,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
 
           {/* Input */}
-          <motion.input
+          <input
             ref={combinedRef}
             type={inputType}
             className={cn(
@@ -189,10 +189,6 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               setHasValue(!!e.target.value)
               props.onChange?.(e)
             }}
-            whileFocus={variant === 'premium' ? {
-              scale: 1.01,
-              transition: { duration: 0.2 }
-            } : {}}
             {...props}
           />
 
