@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Cormorant_Garamond, Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+import { Providers } from '@/components/Providers'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -87,9 +88,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
       <body className={`${cormorant.variable} ${inter.variable} ${jetbrains.variable} antialiased scroll-performance gpu-accelerated`}>
-        <div className="scroll-container">
-          {children}
-        </div>
+        <Providers>
+          <div className="scroll-container">
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   )
