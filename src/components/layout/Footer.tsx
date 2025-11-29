@@ -7,9 +7,35 @@ import { useState } from 'react'
 
 export default function Footer() {
   const [hoveredSocial, setHoveredSocial] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [subscribing, setSubscribing] = useState(false)
+  const [subscribed, setSubscribed] = useState(false)
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubscribing(true)
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      if (response.ok) {
+        setSubscribed(true)
+        setEmail('')
+        setTimeout(() => setSubscribed(false), 5000)
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error)
+    } finally {
+      setSubscribing(false)
+    }
   }
 
   const containerVariants = {
@@ -109,22 +135,31 @@ export default function Footer() {
                 {/* Newsletter Signup */}
                 <div className="space-y-4">
                   <p className="text-white/70 text-sm">Stay updated with our latest collections</p>
-                  <div className="flex gap-3">
-                    <div className="relative flex-1">
-                      <input
-                        type="email"
-                        placeholder="Enter your email"
-                        className="w-full px-4 py-3 glass-panel premium-border rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-accent-gold/50"
-                      />
-                    </div>
-                    <motion.button
-                      className="px-6 py-3 glass-panel premium-border rounded-xl text-white hover:bg-accent-gold/20 transition-colors"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Subscribe
-                    </motion.button>
-                  </div>
+                  {subscribed ? (
+                    <p className="text-accent-gold text-sm">✓ Successfully subscribed!</p>
+                  ) : (
+                    <form onSubmit={handleSubscribe} className="flex gap-3">
+                      <div className="relative flex-1">
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Enter your email"
+                          required
+                          className="w-full px-4 py-3 glass-panel premium-border rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-accent-gold/50"
+                        />
+                      </div>
+                      <motion.button
+                        type="submit"
+                        disabled={subscribing}
+                        className="px-6 py-3 glass-panel premium-border rounded-xl text-white hover:bg-accent-gold/20 transition-colors disabled:opacity-50"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {subscribing ? 'Subscribing...' : 'Subscribe'}
+                      </motion.button>
+                    </form>
+                  )}
                 </div>
               </div>
             </motion.div>
