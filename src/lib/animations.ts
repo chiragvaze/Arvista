@@ -287,3 +287,217 @@ export const springConfigs = {
   bouncy: { stiffness: 400, damping: 20, mass: 0.8 },
   snappy: { stiffness: 500, damping: 25, mass: 0.5 },
 }
+
+// =============================================================================
+// PREMIUM 3D VARIANTS
+// =============================================================================
+
+export const premium3DCardVariants: Variants = {
+  idle: {
+    scale: 1,
+    rotateX: 0,
+    rotateY: 0,
+    z: 0,
+    boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.3)',
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 30,
+    },
+  },
+  hover: {
+    scale: 1.05,
+    z: 100,
+    boxShadow: '0 30px 60px -10px rgba(212, 175, 55, 0.4), 0 0 80px rgba(124, 58, 237, 0.3)',
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+}
+
+export const magneticVariants: Variants = {
+  idle: { x: 0, y: 0, scale: 1 },
+  hover: {
+    scale: 1.05,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 17,
+    },
+  },
+}
+
+export const holographicVariants: Variants = {
+  idle: {
+    backgroundPosition: '0% 50%',
+    filter: 'hue-rotate(0deg)',
+  },
+  hover: {
+    backgroundPosition: '100% 50%',
+    filter: 'hue-rotate(30deg)',
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      repeatType: 'reverse',
+    },
+  },
+}
+
+// =============================================================================
+// PARTICLE SYSTEM VARIANTS
+// =============================================================================
+
+export const particleVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    scale: 0,
+    y: 0,
+  },
+  visible: (i: number) => ({
+    opacity: [0, 1, 0],
+    scale: [0, 1, 0],
+    y: [-20, -100, -20],
+    transition: {
+      duration: 4 + i * 0.5,
+      repeat: Infinity,
+      delay: i * 0.2,
+      ease: 'easeOut',
+    },
+  }),
+}
+
+export const floatingOrbVariants: Variants = {
+  animate: {
+    y: [-20, 20, -20],
+    x: [-10, 10, -10],
+    scale: [1, 1.1, 1],
+    opacity: [0.4, 0.8, 0.4],
+    transition: {
+      duration: 6,
+      repeat: Infinity,
+      ease: 'easeInOut',
+    },
+  },
+}
+
+// =============================================================================
+// GLASS MORPHISM VARIANTS
+// =============================================================================
+
+export const glassMorphVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    backdropFilter: 'blur(0px)',
+    background: 'rgba(255, 255, 255, 0)',
+  },
+  visible: {
+    opacity: 1,
+    backdropFilter: 'blur(40px)',
+    background: 'rgba(255, 255, 255, 0.1)',
+    transition: {
+      duration: 0.6,
+      ease: 'easeOut',
+    },
+  },
+}
+
+// =============================================================================
+// PREMIUM TEXT VARIANTS
+// =============================================================================
+
+export const gradientTextVariants: Variants = {
+  hidden: {
+    backgroundPosition: '0% 50%',
+    opacity: 0,
+  },
+  visible: {
+    backgroundPosition: '100% 50%',
+    opacity: 1,
+    transition: {
+      backgroundPosition: {
+        duration: 3,
+        repeat: Infinity,
+        repeatType: 'reverse',
+      },
+      opacity: {
+        duration: 0.8,
+      },
+    },
+  },
+}
+
+export const typewriterVariants: Variants = {
+  hidden: { width: 0 },
+  visible: {
+    width: '100%',
+    transition: {
+      duration: 2,
+      ease: 'easeInOut',
+    },
+  },
+}
+
+// =============================================================================
+// ADVANCED LOADING VARIANTS
+// =============================================================================
+
+export const spinnerVariants: Variants = {
+  animate: {
+    rotate: 360,
+    transition: {
+      duration: 1,
+      repeat: Infinity,
+      ease: 'linear',
+    },
+  },
+}
+
+export const pulseGlowVariants: Variants = {
+  animate: {
+    boxShadow: [
+      '0 0 20px rgba(212, 175, 55, 0.5)',
+      '0 0 40px rgba(212, 175, 55, 0.8)',
+      '0 0 20px rgba(212, 175, 55, 0.5)',
+    ],
+    scale: [1, 1.05, 1],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+    },
+  },
+}
+
+// =============================================================================
+// SCROLL-TRIGGERED VARIANTS
+// =============================================================================
+
+export const parallaxVariants: Variants = {
+  offscreen: {
+    y: 100,
+    opacity: 0,
+    scale: 0.8,
+  },
+  onscreen: {
+    y: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      bounce: 0.4,
+      duration: 1.5,
+    },
+  },
+}
+
+export const staggeredFadeVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.3,
+    },
+  },
+}

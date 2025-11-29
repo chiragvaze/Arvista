@@ -55,6 +55,24 @@ module.exports = {
           amethyst: '#8B5CF6',
           rose: '#F43F5E',
         },
+        midnight: {
+          50: '#EEF4FF',
+          100: '#D6E2FF',
+          200: '#B0C4FF',
+          300: '#89A5FF',
+          400: '#647DFF',
+          500: '#3C4DFF',
+          600: '#2024E3',
+          700: '#181DB1',
+          800: '#10157F',
+          900: '#090C4D',
+        },
+        aurora: {
+          pink: '#FF7AD9',
+          purple: '#AC7CFF',
+          cyan: '#7DE5FF',
+          lime: '#B3FFAB',
+        },
       },
       fontFamily: {
         display: ['Cormorant Garamond', 'serif'],
@@ -74,6 +92,11 @@ module.exports = {
       },
       borderRadius: {
         '2xl': '32px',
+        '3xl': '48px',
+        'glass': '28px',
+      },
+      borderWidth: {
+        3: '3px',
       },
       boxShadow: {
         'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.04)',
@@ -85,10 +108,32 @@ module.exports = {
         '2xl': '0 32px 64px -16px rgba(0, 0, 0, 0.24), 0 24px 48px -12px rgba(0, 0, 0, 0.16)',
         'primary': '0 8px 24px -4px rgba(139, 71, 38, 0.3)',
         'secondary': '0 8px 24px -4px rgba(37, 87, 160, 0.3)',
+        'glass-strong': '0 35px 120px -25px rgba(15, 23, 42, 0.45)',
+        'glow': '0 20px 60px rgba(212, 175, 55, 0.45)',
+        'neon': '0 8px 30px rgba(124, 58, 237, 0.55), inset 0 0 25px rgba(124, 58, 237, 0.35)',
+      },
+      dropShadow: {
+        aurora: '0 5px 25px rgba(173, 94, 255, 0.55)',
+        glow: '0 0 25px rgba(255, 122, 217, 0.65)',
+      },
+      backgroundImage: {
+        'hero-radial': 'radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.25), transparent 45%)',
+        'hero-radial-2': 'radial-gradient(circle at 80% 0%, rgba(124, 58, 237, 0.25), transparent 35%)',
+        'mesh-lux': 'linear-gradient(125deg, rgba(15, 23, 42, 0.95) 0%, rgba(39, 18, 6, 0.92) 50%, rgba(8, 47, 73, 0.95) 100%)',
+        'glass-gradient': 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 80%)',
+        'aurora': 'linear-gradient(120deg, rgba(255,122,217,0.45), rgba(124,58,237,0.35), rgba(125,229,255,0.35))',
+      },
+      transitionTimingFunction: {
+        'snappy': 'cubic-bezier(0.4, 0, 0.2, 1.4)',
+        'glide': 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       animation: {
         'shimmer': 'shimmer 3s linear infinite',
         'float': 'float 30s ease-in-out infinite',
+        'aurora': 'aurora 18s ease infinite',
+        'pulse-glow': 'pulseGlow 4s ease-in-out infinite',
+        'slow-spin': 'slowSpin 18s linear infinite',
+        'gradient-pan': 'gradientPan 12s ease infinite',
       },
       keyframes: {
         shimmer: {
@@ -101,11 +146,55 @@ module.exports = {
           '50%': { transform: 'translateY(0) translateX(0)' },
           '75%': { transform: 'translateY(30px) translateX(-15px)' },
         },
+        aurora: {
+          '0%': { transform: 'translateY(0) scale(1)', opacity: 0.45 },
+          '50%': { transform: 'translateY(-20px) scale(1.1)', opacity: 0.85 },
+          '100%': { transform: 'translateY(0) scale(1)', opacity: 0.45 },
+        },
+        pulseGlow: {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(212, 175, 55, 0.45)' },
+          '50%': { boxShadow: '0 0 45px 15px rgba(212, 175, 55, 0)' },
+        },
+        slowSpin: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        gradientPan: {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' },
+        },
       },
       backdropBlur: {
         xs: '2px',
+        glass: '40px',
+        ultra: '80px',
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addUtilities }) {
+      const newUtilities = {
+        '.scroll-smooth': {
+          'scroll-behavior': 'smooth',
+        },
+        '.scroll-performance': {
+          'scroll-behavior': 'smooth',
+          'transform': 'translate3d(0, 0, 0)',
+          'will-change': 'scroll-position',
+          '-webkit-overflow-scrolling': 'touch',
+        },
+        '.hardware-accelerated': {
+          'transform': 'translate3d(0, 0, 0)',
+          'backface-visibility': 'hidden',
+          'perspective': '1000px',
+        },
+        '.smooth-transform': {
+          'transition': 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          'will-change': 'transform',
+        },
+      }
+      addUtilities(newUtilities)
+    }
+  ],
 }
