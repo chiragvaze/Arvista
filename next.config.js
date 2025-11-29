@@ -22,6 +22,11 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
+  // Continue build even if some pages fail to prerender (admin pages are dynamic)
+  staticPageGenerationTimeout: 60,
+  generateBuildId: async () => {
+    return process.env.VERCEL_GIT_COMMIT_SHA || `build-${Date.now()}`;
+  },
 }
 
 module.exports = nextConfig

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
-import Link from 'next/link';
 
 interface Stats {
   totalArtworks: number;

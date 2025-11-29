@@ -13,7 +13,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const navigation = [
@@ -27,6 +27,23 @@ export default function AdminLayout({
     { name: 'Reviews', href: '/admin/reviews', icon: '⭐' },
     { name: 'Newsletter', href: '/admin/newsletter', icon: '📧' },
   ];
+
+  // Return loading state during SSR to avoid session errors
+  if (typeof window === 'undefined') {
+    return <div className="min-h-screen bg-gray-50"></div>;
+  }
+
+  // Show loading state during auth check
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -76,9 +93,9 @@ export default function AdminLayout({
             <div className="flex items-center mb-3">
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  {session?.user?.name}
+                  {session?.user?.name || 'User'}
                 </p>
-                <p className="text-xs text-gray-500">{session?.user?.email}</p>
+                <p className="text-xs text-gray-500">{session?.user?.email || ''}</p>
               </div>
             </div>
             <button
