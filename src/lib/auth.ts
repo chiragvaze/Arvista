@@ -29,20 +29,26 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        if (!user || !user.hashedPassword) {
+        if (!user || !user.password) {
           throw new Error('Invalid credentials');
         }
 
         const isCorrectPassword = await bcrypt.compare(
           credentials.password,
-          user.hashedPassword
+          user.password
         );
 
         if (!isCorrectPassword) {
           throw new Error('Invalid credentials');
         }
 
-        return user;
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name || '',
+          role: user.role,
+          image: user.image,
+        };
       },
     }),
   ],
@@ -51,7 +57,6 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
-        session.user.bio = token.bio as string | null;
       }
       return session;
     },
@@ -59,7 +64,6 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
-        token.bio = user.bio;
       }
       return token;
     },

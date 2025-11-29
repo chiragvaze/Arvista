@@ -15,6 +15,13 @@ const nextConfig = {
   },
   // Enable SWC minification
   swcMinify: true,
+  // Allow build to continue despite prerender errors (admin pages need runtime session)
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
 }
 
 module.exports = nextConfig

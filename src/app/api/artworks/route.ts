@@ -126,21 +126,35 @@ export async function POST(request: NextRequest) {
       })
     );
 
+    // Create slug from title
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') + '-' + Date.now();
+
     // Create artwork
     const artwork = await prisma.artwork.create({
       data: {
         title,
+        slug,
         description,
-        artistId,
-        categoryId,
         price,
         imageUrl,
+        images: [],
         dimensions,
         medium,
         year,
         isAvailable: status === 'AVAILABLE',
         isFeatured: featured,
-        collectionId: collectionIds && collectionIds.length > 0 ? collectionIds[0] : null,
+        artist: {
+          connect: { id: artistId },
+        },
+        category: {
+          connect: { id: categoryId },
+        },
+        collection: collectionIds && collectionIds.length > 0 ? {
+          connect: { id: collectionIds[0] },
+        } : undefined,
         tags: {
           connect: tags,
         },

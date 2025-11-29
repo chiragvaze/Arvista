@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      if (existing.status === 'UNSUBSCRIBED') {
+      if (!existing.isActive) {
         // Resubscribe
         await prisma.newsletter.update({
           where: { email },
-          data: { status: 'SUBSCRIBED' },
+          data: { isActive: true },
         });
         return NextResponse.json({
           message: 'Successfully resubscribed to newsletter!',
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     await prisma.newsletter.create({
       data: {
         email,
-        status: 'SUBSCRIBED',
+        isActive: true,
       },
     });
 
@@ -83,7 +83,7 @@ export async function DELETE(request: NextRequest) {
 
     await prisma.newsletter.update({
       where: { email },
-      data: { status: 'UNSUBSCRIBED' },
+      data: { isActive: false },
     });
 
     return NextResponse.json({

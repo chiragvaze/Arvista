@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       data: {
         email,
         name,
-        hashedPassword,
+        password: hashedPassword,
         role: 'USER',
       },
       select: {

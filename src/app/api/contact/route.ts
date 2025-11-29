@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         email,
-        subject,
+        subject: subject || '',
         message,
-        status: 'PENDING',
+        status: 'UNREAD',
       },
     });
 

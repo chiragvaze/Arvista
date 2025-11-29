@@ -62,31 +62,33 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      name,
+      title,
       description,
       slug,
-      imageUrl,
-      featured = false,
+      coverImage,
+      year,
+      isPublished = false,
       artworkIds = [],
     } = body;
 
-    if (!name || !slug) {
+    if (!title || !slug) {
       return NextResponse.json(
-        { error: 'Name and slug are required' },
+        { error: 'Title and slug are required' },
         { status: 400 }
       );
     }
 
     const collection = await prisma.collection.create({
       data: {
-        name,
-        description,
+        title,
+        description: description || '',
         slug,
-        imageUrl,
-        featured,
-        artworks: {
+        coverImage: coverImage || '',
+        year: year || null,
+        isPublished,
+        artworks: artworkIds.length > 0 ? {
           connect: artworkIds.map((id: string) => ({ id })),
-        },
+        } : undefined,
       },
       include: {
         artworks: true,
