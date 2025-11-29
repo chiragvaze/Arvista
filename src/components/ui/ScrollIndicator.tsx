@@ -284,9 +284,10 @@ export default function ScrollIndicator({
           {[0.25, 0.5, 0.75].map((position, index) => (
             <motion.div
               key={index}
-              className="absolute w-3 h-3 bg-gray-700 rounded-full border-2 border-gray-600 -left-1"
-              style={{ top: `${position * 100}%`, y: '-50%' }}
-              animate={{
+              className="absolute w-3 h-3 bg-gray-700 rounded-full border-2 -left-1"
+              style={{ 
+                top: `${position * 100}%`, 
+                y: '-50%',
                 borderColor: useTransform(
                   springScrollYProgress,
                   [position - 0.05, position, position + 0.05],
