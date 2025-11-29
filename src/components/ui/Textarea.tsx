@@ -162,7 +162,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           )}
 
           {/* Textarea */}
-          <motion.textarea
+          <textarea
             ref={combinedRef}
             className={cn(
               getVariantClasses(),
@@ -187,10 +187,6 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
               setWordCount(e.target.value.length)
               props.onChange?.(e)
             }}
-            whileFocus={variant === 'premium' ? {
-              scale: 1.01,
-              transition: { duration: 0.2 }
-            } : {}}
             {...props}
           />
 
