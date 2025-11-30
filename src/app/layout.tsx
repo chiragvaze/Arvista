@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/Providers'
 import SmoothScroll from '@/components/ui/SmoothScroll'
+import PageLoader from '@/components/ui/PageLoader'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -95,6 +96,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
       <body className={`${cormorant.variable} ${inter.variable} ${jetbrains.variable} antialiased scroll-performance gpu-accelerated`}>
         <Providers>
+          <PageLoader />
           <SmoothScroll />
           <div className="scroll-container">
             {children}
