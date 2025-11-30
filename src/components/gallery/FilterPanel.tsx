@@ -84,72 +84,93 @@ export default function FilterPanel({ onFilterChange }: FilterPanelProps) {
   }, [filters])
 
   return (
-    <div className="w-full">
-      {/* Search Bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+    <div className="w-full mb-12">
+      {/* Premium Search Bar */}
+      <div className="relative mb-8">
+        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-accent-gold z-10" />
         <input
           type="text"
-          placeholder="Search artworks by title or description..."
+          placeholder="Search artworks by title, description, or tags..."
           value={filters.search}
           onChange={(e) => handleFilterChange('search', e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          className="w-full pl-16 pr-6 py-5 glass-panel premium-border rounded-2xl backdrop-blur-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-accent-gold/50 text-lg transition-all"
         />
       </div>
 
-      {/* Filter Toggle Button */}
-      <div className="flex items-center justify-between mb-6">
-        <button
+      {/* Premium Filter Toggle Button */}
+      <div className="flex items-center justify-between mb-8">
+        <motion.button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-300 hover:bg-neutral-50 transition-colors"
+          className="flex items-center gap-3 px-6 py-4 glass-panel premium-border rounded-2xl backdrop-blur-xl text-white hover:bg-white/5 transition-colors"
+          whileHover={{ scale: 1.02, y: -2 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <SlidersHorizontal className="w-5 h-5" />
-          <span className="font-medium">Filters</span>
+          <SlidersHorizontal className="w-5 h-5 text-accent-gold" />
+          <span className="font-medium text-lg">Filters</span>
           {activeFilterCount > 0 && (
-            <span className="px-2 py-0.5 bg-primary-600 text-white text-xs rounded-full">
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="px-3 py-1 bg-gradient-to-r from-accent-gold to-accent-amber text-black text-sm rounded-full font-semibold"
+            >
               {activeFilterCount}
-            </span>
+            </motion.span>
           )}
-        </button>
+        </motion.button>
 
         {activeFilterCount > 0 && (
-          <button
+          <motion.button
             onClick={clearFilters}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-600 hover:text-neutral-900"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2 px-5 py-3 glass-panel premium-border rounded-xl text-white/80 hover:text-white hover:bg-red-500/20 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <X className="w-4 h-4" />
             Clear all
-          </button>
+          </motion.button>
         )}
       </div>
 
-      {/* Filter Panel */}
+      {/* Premium Filter Panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
+            initial={{ height: 0, opacity: 0, y: -20 }}
+            animate={{ height: 'auto', opacity: 1, y: 0 }}
+            exit={{ height: 0, opacity: 0, y: -20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="overflow-hidden mb-12"
           >
-            <div className="p-6 bg-neutral-50 rounded-lg space-y-6 mb-8">
+            <div className="p-8 glass-panel premium-border rounded-3xl backdrop-blur-xl space-y-8">
               {/* Category Filter */}
               <div>
-                <h3 className="font-display font-semibold text-lg mb-3">Category</h3>
-                <div className="flex flex-wrap gap-2">
+                <h3 className="font-display font-semibold text-xl mb-4 text-gradient-lux flex items-center gap-2">
+                  <motion.div
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    🎨
+                  </motion.div>
+                  Category
+                </h3>
+                <div className="flex flex-wrap gap-3">
                   {categories.map((cat) => (
-                    <button
+                    <motion.button
                       key={cat}
                       onClick={() => toggleArrayFilter('category', cat)}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
                       className={cn(
-                        'px-4 py-2 rounded-full text-sm font-medium transition-all',
+                        'px-5 py-3 rounded-xl text-sm font-medium transition-all backdrop-blur-sm',
                         filters.category.includes(cat)
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-white text-neutral-700 hover:bg-neutral-100'
+                          ? 'bg-gradient-to-r from-accent-gold to-accent-amber text-black shadow-glow'
+                          : 'glass-panel text-white/80 hover:text-white border border-white/20 hover:border-accent-gold/50'
                       )}
                     >
                       {cat}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </div>
