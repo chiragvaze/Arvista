@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { Award, Palette, Users, Heart } from 'lucide-react'
 import Navigation from '@/components/layout/Navigation'
 import Footer from '@/components/layout/Footer'
+import GlowCard from '@/components/ui/GlowCard'
+import ScrollReveal from '@/components/ui/ScrollReveal'
 import { fadeInUpVariants, gridVariants } from '@/lib/animations'
 
 const timeline = [
@@ -43,22 +45,34 @@ export default function AboutPage() {
     <div className="min-h-screen bg-neutral-0">
       <Navigation />
 
-      <main className="pt-24 pb-20">
+      <main className="pt-32 pb-20">
         {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-6 lg:px-8 mb-20">
-          <motion.div
-            variants={fadeInUpVariants}
-            initial="hidden"
-            animate="visible"
-            className="text-center mb-12"
-          >
-            <h1 className="font-display text-5xl lg:text-6xl font-bold text-neutral-900 mb-4">
-              About the Artist
-            </h1>
-            <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-              Exploring the intersection of light, emotion, and memory through contemporary visual art
-            </p>
-          </motion.div>
+          <ScrollReveal>
+            <motion.div
+              variants={fadeInUpVariants}
+              initial="hidden"
+              animate="visible"
+              className="text-center mb-16"
+            >
+              <motion.div
+                className="inline-block mb-6"
+                animate={{ 
+                  rotateY: [0, 360],
+                }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              >
+                <Palette className="w-16 h-16 text-accent-gold mx-auto" />
+              </motion.div>
+              <h1 className="font-display text-6xl lg:text-8xl font-light text-gradient-lux mb-6 tracking-tight">
+                About the Artist
+              </h1>
+              <div className="h-1 w-48 bg-gradient-to-r from-transparent via-accent-gold to-transparent mx-auto mb-8" />
+              <p className="text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+                Exploring the intersection of light, emotion, and memory through contemporary visual art
+              </p>
+            </motion.div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Artist Photo */}
@@ -113,22 +127,47 @@ export default function AboutPage() {
         </section>
 
         {/* Values Section */}
-        <section className="bg-neutral-50 py-20">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <section className="relative py-24 overflow-hidden">
+          {/* Background Effects */}
+          <div className="absolute inset-0 -z-10">
             <motion.div
-              variants={fadeInUpVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <h2 className="font-display text-4xl font-bold text-neutral-900 mb-4">
-                Artistic Philosophy
-              </h2>
-              <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-                The principles that guide my creative process and artistic journey
-              </p>
-            </motion.div>
+              className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-accent-gold/10 to-transparent rounded-full filter blur-3xl"
+              animate={{
+                x: [0, 50, 0],
+                y: [0, -30, 0],
+                scale: [1, 1.2, 1],
+              }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-accent-amethyst/10 to-transparent rounded-full filter blur-3xl"
+              animate={{
+                x: [0, -50, 0],
+                y: [0, 30, 0],
+                scale: [1.2, 1, 1.2],
+              }}
+              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
+
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <ScrollReveal>
+              <motion.div
+                variants={fadeInUpVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                className="text-center mb-16"
+              >
+                <h2 className="font-display text-5xl lg:text-6xl font-light text-gradient-lux mb-6">
+                  Artistic Philosophy
+                </h2>
+                <div className="h-1 w-64 bg-gradient-to-r from-transparent via-accent-gold to-transparent mx-auto mb-6" />
+                <p className="text-xl text-white/70 max-w-3xl mx-auto leading-relaxed">
+                  The principles that guide my creative process and artistic journey
+                </p>
+              </motion.div>
+            </ScrollReveal>
 
             <motion.div
               variants={gridVariants}
@@ -138,16 +177,23 @@ export default function AboutPage() {
               className="grid grid-cols-1 md:grid-cols-2 gap-8"
             >
               {values.map((value, idx) => (
-                <div
-                  key={idx}
-                  className="p-8 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <value.icon className="w-12 h-12 text-primary-600 mb-4" />
-                  <h3 className="font-display text-2xl font-bold text-neutral-900 mb-3">
-                    {value.title}
-                  </h3>
-                  <p className="text-neutral-700 leading-relaxed">{value.description}</p>
-                </div>
+                <ScrollReveal key={idx} delay={idx * 0.1}>
+                  <GlowCard glowColor="rgba(212, 175, 55, 0.3)">
+                    <div className="p-8 glass-panel premium-border rounded-2xl h-full backdrop-blur-xl">
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 360 }}
+                        transition={{ duration: 0.6 }}
+                        className="inline-block"
+                      >
+                        <value.icon className="w-12 h-12 text-accent-gold mb-6" />
+                      </motion.div>
+                      <h3 className="font-display text-2xl font-semibold text-gradient-lux mb-4">
+                        {value.title}
+                      </h3>
+                      <p className="text-white/80 leading-relaxed text-lg">{value.description}</p>
+                    </div>
+                  </GlowCard>
+                </ScrollReveal>
               ))}
             </motion.div>
           </div>

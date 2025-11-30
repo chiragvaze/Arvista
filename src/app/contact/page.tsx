@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, MapPin, Phone, Instagram, Facebook, Twitter, Send } from 'lucide-react'
+import { Mail, MapPin, Phone, Instagram, Facebook, Twitter, Send, Sparkles } from 'lucide-react'
 import Navigation from '@/components/layout/Navigation'
 import Footer from '@/components/layout/Footer'
 import Input from '@/components/ui/Input'
 import Textarea from '@/components/ui/Textarea'
 import Button from '@/components/ui/Button'
+import GlowCard from '@/components/ui/GlowCard'
+import MagneticButton from '@/components/ui/MagneticButton'
+import ScrollReveal from '@/components/ui/ScrollReveal'
 import { fadeInUpVariants, gridVariants } from '@/lib/animations'
 
 const contactInfo = [
@@ -86,22 +89,35 @@ export default function ContactPage() {
     <div className="min-h-screen bg-neutral-0">
       <Navigation />
 
-      <main className="pt-24 pb-20">
+      <main className="pt-32 pb-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {/* Page Header */}
-          <motion.div
-            variants={fadeInUpVariants}
-            initial="hidden"
-            animate="visible"
-            className="text-center mb-12"
-          >
-            <h1 className="font-display text-5xl lg:text-6xl font-bold text-neutral-900 mb-4">
-              Get in Touch
-            </h1>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
-              Interested in a commission, collaboration, or just want to say hello? I'd love to hear from you.
-            </p>
-          </motion.div>
+          <ScrollReveal>
+            <motion.div
+              variants={fadeInUpVariants}
+              initial="hidden"
+              animate="visible"
+              className="text-center mb-16"
+            >
+              <motion.div
+                className="inline-block mb-6"
+                animate={{ 
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1, 1.1, 1]
+                }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Sparkles className="w-16 h-16 text-accent-gold mx-auto" />
+              </motion.div>
+              <h1 className="font-display text-6xl lg:text-8xl font-light text-gradient-lux mb-6 tracking-tight">
+                Get in Touch
+              </h1>
+              <div className="h-1 w-48 bg-gradient-to-r from-transparent via-accent-gold to-transparent mx-auto mb-8" />
+              <p className="text-2xl text-white/80 max-w-2xl mx-auto leading-relaxed">
+                Interested in a commission, collaboration, or just want to say hello? I'd love to hear from you.
+              </p>
+            </motion.div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
             {/* Contact Form */}

@@ -24,16 +24,18 @@ export default function Navigation() {
 
   const navVariants = {
     top: {
-      background: "rgba(255, 255, 255, 0.05)",
-      backdropFilter: "blur(20px)",
+      background: "rgba(0, 0, 0, 0.3)",
+      backdropFilter: "blur(30px) saturate(180%)",
       borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
       padding: "1rem 0",
+      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
     },
     scrolled: {
-      background: "rgba(0, 0, 0, 0.8)",
-      backdropFilter: "blur(40px)",
-      borderBottom: "1px solid rgba(212, 175, 55, 0.3)",
+      background: "rgba(0, 0, 0, 0.85)",
+      backdropFilter: "blur(50px) saturate(200%)",
+      borderBottom: "1px solid rgba(212, 175, 55, 0.4)",
       padding: "0.75rem 0",
+      boxShadow: "0 12px 48px rgba(212, 175, 55, 0.15), 0 0 80px rgba(124, 58, 237, 0.1)",
     },
   }
 

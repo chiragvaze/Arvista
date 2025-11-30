@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'fram
 import { ArrowRight, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import MagneticButton from '@/components/ui/MagneticButton'
 
 interface Particle {
   id: number
@@ -244,36 +245,38 @@ export default function HeroSection() {
           />
         </motion.p>
 
-        {/* Premium CTA Button */}
+        {/* Premium CTA Button with Magnetic Effect */}
         <motion.div variants={itemVariants}>
           <Link href="/gallery">
-            <motion.div
-              className="group relative inline-flex items-center gap-4 px-12 py-5 premium-border glass-panel rounded-2xl font-semibold text-lg overflow-hidden cursor-pointer"
-              whileHover={{ scale: 1.05, y: -5 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              {/* Button Background Glow */}
+            <MagneticButton>
               <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-accent-gold/20 to-accent-amethyst/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              />
-              
-              {/* Shimmer Effect */}
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"
-              />
-              
-              <Sparkles className="w-5 h-5 text-accent-gold" />
-              <span className="relative z-10 text-white group-hover:text-accent-gold transition-colors duration-300">
-                Explore Gallery
-              </span>
-              <motion.div
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                className="group relative inline-flex items-center gap-4 px-12 py-5 premium-border glass-panel rounded-2xl font-semibold text-lg overflow-hidden cursor-pointer"
+                whileHover={{ scale: 1.05, y: -5 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
-                <ArrowRight size={20} className="text-accent-gold group-hover:rotate-12 transition-transform duration-300" />
+                {/* Button Background Glow */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-accent-gold/20 to-accent-amethyst/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                />
+                
+                {/* Shimmer Effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"
+                />
+                
+                <Sparkles className="w-5 h-5 text-accent-gold" />
+                <span className="relative z-10 text-white group-hover:text-accent-gold transition-colors duration-300">
+                  Explore Gallery
+                </span>
+                <motion.div
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <ArrowRight size={20} className="text-accent-gold group-hover:rotate-12 transition-transform duration-300" />
+                </motion.div>
               </motion.div>
-            </motion.div>
+            </MagneticButton>
           </Link>
         </motion.div>
       </motion.div>
