@@ -3,7 +3,6 @@ import { Cormorant_Garamond, Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/Providers'
 import SmoothScroll from '@/components/ui/SmoothScroll'
-import PageLoader from '@/components/ui/PageLoader'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -46,11 +45,6 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'Arvista' }],
   creator: 'Arvista',
-  icons: {
-    icon: '/logo.svg',
-    shortcut: '/logo.svg',
-    apple: '/logo.svg',
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -96,7 +90,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
       <body className={`${cormorant.variable} ${inter.variable} ${jetbrains.variable} antialiased scroll-performance gpu-accelerated`}>
         <Providers>
-          <PageLoader />
           <SmoothScroll />
           <div className="scroll-container">
             {children}
