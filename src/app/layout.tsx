@@ -45,6 +45,11 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'Arvista' }],
   creator: 'Arvista',
+  icons: {
+    icon: '/logo.svg',
+    shortcut: '/logo.svg',
+    apple: '/logo.svg',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
