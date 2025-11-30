@@ -173,7 +173,7 @@ module.exports = {
     },
   },
   plugins: [
-    function({ addUtilities }) {
+    function({ addUtilities, addComponents }) {
       const newUtilities = {
         '.scroll-smooth': {
           'scroll-behavior': 'smooth',
@@ -193,8 +193,41 @@ module.exports = {
           'transition': 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           'will-change': 'transform',
         },
+        '.text-gradient-lux': {
+          'background': 'linear-gradient(135deg, #FFFFFF 0%, #D4AF37 50%, #FFFFFF 100%)',
+          'background-clip': 'text',
+          '-webkit-background-clip': 'text',
+          '-webkit-text-fill-color': 'transparent',
+          'background-size': '200% auto',
+        },
+        '.glass-panel': {
+          'background': 'rgba(255, 255, 255, 0.05)',
+          'backdrop-filter': 'blur(30px) saturate(180%)',
+          '-webkit-backdrop-filter': 'blur(30px) saturate(180%)',
+          'border': '1px solid rgba(255, 255, 255, 0.1)',
+        },
+        '.premium-border': {
+          'border': '1px solid rgba(212, 175, 55, 0.3)',
+        },
+        '.cursor-premium': {
+          'cursor': 'pointer',
+        },
       }
+      
+      const newComponents = {
+        '.btn-premium': {
+          '@apply px-8 py-4 glass-panel premium-border rounded-2xl text-white font-semibold': {},
+          '@apply hover:bg-gradient-to-r hover:from-accent-gold/20 hover:to-accent-amethyst/20': {},
+          '@apply transition-all duration-300 transform hover:scale-105 hover:shadow-glow': {},
+        },
+        '.card-premium': {
+          '@apply glass-panel premium-border rounded-3xl p-8 backdrop-blur-xl': {},
+          '@apply hover:shadow-glow transition-all duration-500': {},
+        },
+      }
+      
       addUtilities(newUtilities)
+      addComponents(newComponents)
     }
   ],
 }
