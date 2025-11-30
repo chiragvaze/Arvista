@@ -34,15 +34,15 @@ export default function HeroSection() {
   useEffect(() => {
     const generateParticles = () => {
       const newParticles: Particle[] = []
-      // Reduced from 30 to 15 particles for better scroll performance
-      for (let i = 0; i < 15; i++) {
+      // Reduced from 30 to 10 particles for buttery smooth performance
+      for (let i = 0; i < 10; i++) {
         newParticles.push({
           id: i,
           x: Math.random() * 100,
           y: Math.random() * 100,
-          size: Math.random() * 3 + 1,
-          duration: Math.random() * 25 + 20, // Slower animations
-          delay: Math.random() * 3
+          size: Math.random() * 2 + 1,
+          duration: Math.random() * 30 + 25, // Even slower for smoother animation
+          delay: Math.random() * 5
         })
       }
       setParticles(newParticles)
@@ -107,44 +107,35 @@ export default function HeroSection() {
         className="absolute inset-0 bg-gradient-to-br from-primary-900 via-primary-800 to-secondary-900"
       />
       
-      {/* Optimized Aurora Background */}
-      <div className="absolute inset-0 gpu-accelerated">
+      {/* Optimized Aurora Background - Reduced complexity */}
+      <div className="absolute inset-0 gpu-accelerated pointer-events-none">
         <motion.div 
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-aurora-pink/20 rounded-full filter blur-3xl gpu-accelerated"
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-aurora-pink/15 rounded-full filter blur-3xl gpu-accelerated"
           animate={{
-            scale: [1, 1.1, 1],
-            x: [0, 30, 0],
-            y: [0, -20, 0],
+            scale: [1, 1.08, 1],
+            x: [0, 25, 0],
+            y: [0, -15, 0],
           }}
           transition={{ 
-            duration: 12, 
+            duration: 18, 
             repeat: Infinity, 
             ease: "easeInOut",
             repeatType: "reverse"
           }}
         />
         <motion.div 
-          className="absolute top-1/3 right-1/4 w-80 h-80 bg-aurora-purple/15 rounded-full filter blur-3xl gpu-accelerated"
+          className="absolute top-1/3 right-1/4 w-80 h-80 bg-aurora-purple/12 rounded-full filter blur-3xl gpu-accelerated"
           animate={{
-            scale: [1.1, 1, 1.1],
-            x: [0, -25, 0],
-            y: [0, 25, 0],
+            scale: [1.08, 1, 1.08],
+            x: [0, -20, 0],
+            y: [0, 20, 0],
           }}
           transition={{ 
-            duration: 15, 
+            duration: 20, 
             repeat: Infinity, 
             ease: "easeInOut",
             repeatType: "reverse"
           }}
-        />
-        <motion.div 
-          className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-aurora-cyan/20 rounded-full filter blur-3xl"
-          animate={{
-            scale: [1, 1.3, 1],
-            x: [0, 30, 0],
-            y: [0, -20, 0],
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
@@ -174,34 +165,16 @@ export default function HeroSection() {
         />
       ))}
 
-      {/* Optimized Interactive Orbs */}
+      {/* Optimized Interactive Orbs - Reduced count */}
       <motion.div
-        className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full bg-gradient-to-br from-accent-gold/30 to-accent-amber/15 filter blur-xl gpu-accelerated"
+        className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full bg-gradient-to-br from-accent-gold/25 to-accent-amber/10 filter blur-xl gpu-accelerated pointer-events-none"
         style={{
           x: mouseXSpring,
           y: mouseYSpring,
         }}
         animate={{
-          scale: [1, 1.05, 1],
-          opacity: [0.3, 0.5, 0.3],
-        }}
-        transition={{ 
-          duration: 6, 
-          repeat: Infinity, 
-          ease: "easeInOut",
-          repeatType: "reverse"
-        }}
-      />
-      
-      <motion.div
-        className="absolute bottom-1/3 right-1/3 w-24 h-24 rounded-full bg-gradient-to-br from-accent-amethyst/25 to-aurora-purple/15 filter blur-xl gpu-accelerated"
-        style={{
-          x: mouseXSpring,
-          y: mouseYSpring,
-        }}
-        animate={{
-          scale: [1.05, 1, 1.05],
-          opacity: [0.2, 0.4, 0.2],
+          scale: [1, 1.03, 1],
+          opacity: [0.25, 0.4, 0.25],
         }}
         transition={{ 
           duration: 8, 

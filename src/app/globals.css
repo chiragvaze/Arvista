@@ -67,21 +67,27 @@
 
 @layer base {
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto; /* Changed from smooth for better performance */
     scroll-padding-top: 4rem;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-neutral-950 text-neutral-50 font-body;
     min-height: 100vh;
     background-image: var(--gradient-lux);
+    background-attachment: fixed;
     color: var(--text-primary);
-    transition: background 0.6s ease, color 0.3s ease;
     position: relative;
     overflow-x: hidden;
-    transform: translate3d(0, 0, 0);
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: none;
+    /* Performance optimizations */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering: optimizeLegibility;
+    will-change: auto; /* Only use will-change when needed */
   }
 
   body::before,
@@ -95,9 +101,11 @@
 
   body::before {
     background: var(--gradient-aurora);
-    filter: blur(120px);
-    opacity: 0.45;
+    filter: blur(100px);
+    opacity: 0.35;
     animation: float 40s ease-in-out infinite;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   body::after {
@@ -419,20 +427,34 @@
   }
 }
 
-/* Optimize scroll performance */
+/* Optimize scroll performance - Buttery smooth */
 .scroll-container {
-  transform: translate3d(0, 0, 0);
-  will-change: scroll-position;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Native smooth scrolling via JS instead */
 }
 
 /* GPU acceleration for better performance */
 .gpu-accelerated {
-  transform: translate3d(0, 0, 0);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   perspective: 1000px;
+}
+
+/* Ultra smooth animations - 60fps optimized */
+.smooth-60fps {
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
+}
+
+.smooth-60fps:not(:hover):not(:active) {
+  will-change: auto;
 }
 
 /* Reduced Motion Support */
