@@ -42,7 +42,7 @@ const values = [
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-neutral-0">
+    <div className="min-h-screen bg-gradient-to-br from-black via-primary-900 to-black">
       <Navigation />
 
       <main className="pt-32 pb-20">
