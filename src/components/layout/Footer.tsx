@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Heart, Instagram, Twitter, Mail, Sparkles, Star, ArrowUp } from 'lucide-react'
 import { useState } from 'react'
+import Logo from '@/components/ui/Logo'
 
 export default function Footer() {
   const [hoveredSocial, setHoveredSocial] = useState<string | null>(null)
@@ -109,19 +110,15 @@ export default function Footer() {
             {/* Premium Brand Section */}
             <motion.div variants={itemVariants} className="col-span-1 md:col-span-2">
               <div className="relative">
-                <motion.h3 
-                  className="text-4xl font-display font-light text-gradient-lux mb-4 relative"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  ARVISTA
-                  <motion.div
-                    className="absolute -top-2 -right-2"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                <div className="flex items-center gap-4 mb-4">
+                  <Logo size="lg" animated />
+                  <motion.h3 
+                    className="text-4xl font-display font-light text-gradient-lux relative"
+                    whileHover={{ scale: 1.05 }}
                   >
-                    <Sparkles className="w-6 h-6 text-accent-gold/60" />
-                  </motion.div>
-                </motion.h3>
+                    ARVISTA
+                  </motion.h3>
+                </div>
                 
                 <p className="text-white/80 text-lg mb-6 font-light tracking-wide">
                   Where Art Meets Vision

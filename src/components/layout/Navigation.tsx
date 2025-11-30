@@ -4,6 +4,7 @@ import { motion, useScroll, useMotionValueEvent } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Menu, X, Sparkles, Palette, User, Mail } from 'lucide-react'
+import Logo from '@/components/ui/Logo'
 
 const navItems = [
   { name: 'Gallery', href: '/gallery', icon: Palette },
@@ -78,8 +79,9 @@ export default function Navigation() {
               variants={logoVariants}
               initial="initial"
               whileHover="hover"
-              className="relative"
+              className="relative flex items-center gap-3"
             >
+              <Logo size="md" animated />
               <h1 className="text-3xl font-display font-light tracking-tight text-gradient-lux relative z-10">
                 ARVISTA
               </h1>
@@ -88,9 +90,6 @@ export default function Navigation() {
                 whileHover={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
               />
-              {/* Decorative elements */}
-              <div className="absolute -top-1 -left-1 w-2 h-2 bg-accent-gold rounded-full opacity-60" />
-              <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 bg-accent-amethyst rounded-full opacity-60" />
             </motion.div>
           </Link>
 

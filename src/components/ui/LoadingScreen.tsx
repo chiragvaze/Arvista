@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
+import Logo from '@/components/ui/Logo';
 
 /**
  * Premium loading screen with animated logo
@@ -54,8 +55,22 @@ export default function LoadingScreen() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="relative"
+              className="relative flex flex-col items-center"
             >
+              <motion.div
+                className="mb-8"
+                animate={{ 
+                  rotate: 360,
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ 
+                  rotate: { duration: 4, repeat: Infinity, ease: "linear" },
+                  scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                }}
+              >
+                <Logo size="xl" animated={false} />
+              </motion.div>
+              
               <motion.h1
                 className="text-7xl md:text-9xl font-display font-light text-gradient-lux tracking-tight"
                 animate={{
@@ -69,15 +84,6 @@ export default function LoadingScreen() {
               >
                 ARVISTA
               </motion.h1>
-              
-              {/* Decorative sparkles */}
-              <motion.div
-                className="absolute -top-6 -right-6"
-                animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              >
-                <Sparkles className="w-8 h-8 text-accent-gold" />
-              </motion.div>
             </motion.div>
 
             {/* Animated subtitle */}
