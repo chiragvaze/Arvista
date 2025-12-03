@@ -1,6 +1,6 @@
 /* ===================================
-   ARVISTA - VANILLA GSAP VERSION
-   Advanced Animations & Smooth Performance
+   ARVISTA PREMIUM - VANILLA + GSAP + THREE.JS
+   Advanced 3D Animations & WebGL Effects
    =================================== */
 
 /* Reset & Base */
@@ -16,7 +16,7 @@
   --color-amethyst: #7C3AED;
   --color-white: #FFFFFF;
   --gradient-primary: linear-gradient(135deg, #8B4726 0%, #D4AF37 100%);
-  --gradient-dark: linear-gradient(to bottom right, #000000, #1A0E0A, #000000);
+  --gradient-dark: linear-gradient(135deg, #1a1625 0%, #0f0e14 100%);
 }
 
 html {
@@ -24,11 +24,48 @@ html {
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--gradient-dark);
   color: var(--color-white);
   overflow-x: hidden;
   cursor: none; /* Custom cursor */
+}
+
+/* Premium Loader */
+#app-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: var(--gradient-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.loader-content {
+  text-align: center;
+}
+
+.loader-logo {
+  font-size: 4rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-amethyst) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.2em;
+  margin-bottom: 2rem;
+  text-shadow: 0 0 40px rgba(212, 175, 55, 0.5);
+}
+
+.loader-bar {
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-gold), var(--color-amethyst));
+  box-shadow: 0 0 20px var(--color-gold), 0 0 40px var(--color-amethyst);
 }
 
 /* Custom Cursor */
@@ -49,7 +86,12 @@ body {
   height: 100%;
   border: 2px solid var(--color-gold);
   border-radius: 50%;
-  transition: background 0.3s;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.custom-cursor.active .cursor-dot {
+  transform: scale(1.5);
+  background: rgba(212, 175, 55, 0.2);
 }
 
 /* Navigation */
