@@ -9,12 +9,14 @@ import {
   initMagneticElements 
 } from './animations/premiumEffects.js';
 import { initShaderEffects } from './animations/shaderEffects.js';
+import { initAllAdvancedEffects } from './animations/advancedEffects.js';
 import { Navigation } from './components/navigation.js';
 import { Hero } from './components/hero.js';
 import { Gallery } from './components/gallery.js';
 
 /**
- * Arvista Premium - Vanilla JS + GSAP + Three.js
+ * Arvista Ultra Premium - Next Gen Animations
+ * Three.js • GSAP • Lenis • WebGL Shaders
  */
 class App {
   constructor() {
@@ -22,7 +24,6 @@ class App {
   }
 
   init() {
-    // Wait for DOM to be ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => this.start());
     } else {
@@ -31,83 +32,95 @@ class App {
   }
 
   start() {
-    console.log('🎨 Arvista Premium - Loading...');
-    console.log('🚀 Features: Three.js 3D, GLSL Shaders, Lenis Smooth Scroll');
+    console.log('🎨 Arvista Ultra Premium - Initializing...');
+    console.log('🚀 Three.js • GSAP • WebGL • Lenis');
 
-    // Initialize core animations
-    this.initAnimations();
+    try {
+      // Core animations
+      this.initAnimations();
 
-    // Initialize premium effects
-    this.initPremiumEffects();
+      // Premium effects
+      this.initPremiumEffects();
 
-    // Initialize components based on current page
-    this.initComponents();
+      // Advanced next-gen effects
+      this.initAdvancedEffects();
 
-    // Setup page transitions
-    this.setupPageTransitions();
+      // Components
+      this.initComponents();
 
-    // Initialize WebGL effects after images load
-    window.addEventListener('load', () => {
-      this.initWebGLEffects();
-    });
+      // Page transitions
+      this.setupPageTransitions();
 
-    console.log('✨ Premium animations initialized successfully!');
+      // WebGL effects after load
+      window.addEventListener('load', () => {
+        this.initWebGLEffects();
+      });
+
+      console.log('✨ Ultra Premium animations loaded successfully!');
+    } catch (error) {
+      console.error('❌ Error initializing app:', error);
+    }
   }
 
   initAnimations() {
-    // Smooth scrolling with Lenis
-    this.lenis = initSmoothScroll();
-
-    // Custom magnetic cursor
-    this.cursor = initCursor();
-
-    // Parallax effects
-    initParallax();
-
-    // Image reveals
-    initImageReveal();
-
-    // Text animations
-    initTextReveal();
+    try {
+      this.lenis = initSmoothScroll();
+      this.cursor = initCursor();
+      initParallax();
+      initImageReveal();
+      initTextReveal();
+    } catch (error) {
+      console.warn('Animation init warning:', error);
+    }
   }
 
   initPremiumEffects() {
-    // Advanced GSAP effects
-    initPremiumCards();
-    initAdvancedReveals();
-    initElasticScroll();
-    initMagneticElements();
+    try {
+      initPremiumCards();
+      initAdvancedReveals();
+      initElasticScroll();
+      initMagneticElements();
+    } catch (error) {
+      console.warn('Premium effects warning:', error);
+    }
+  }
+
+  initAdvancedEffects() {
+    try {
+      initAllAdvancedEffects();
+    } catch (error) {
+      console.warn('Advanced effects warning:', error);
+    }
   }
 
   initWebGLEffects() {
-    // Three.js shader effects on gallery images
     try {
       initShaderEffects();
       console.log('🎮 WebGL shader effects loaded!');
     } catch (error) {
-      console.warn('WebGL not supported, falling back to CSS effects');
+      console.warn('⚠️ WebGL not available, using CSS fallback');
     }
   }
 
   initComponents() {
-    // Navigation (on all pages)
-    new Navigation();
+    try {
+      new Navigation();
 
-    // Hero with 3D background
-    const heroContainer = document.querySelector('.hero');
-    if (heroContainer) {
-      this.hero = new Hero(heroContainer);
-    }
+      const heroContainer = document.querySelector('.hero');
+      if (heroContainer) {
+        this.hero = new Hero(heroContainer);
+      }
 
-    // Gallery with premium effects
-    const galleryContainer = document.querySelector('.gallery-grid');
-    if (galleryContainer) {
-      this.gallery = new Gallery(galleryContainer);
+      const galleryContainer = document.querySelector('.gallery-grid');
+      if (galleryContainer) {
+        this.gallery = new Gallery(galleryContainer);
+      }
+    } catch (error) {
+      console.warn('Component init warning:', error);
     }
   }
 
   setupPageTransitions() {
-    // Using native View Transitions API with premium effects
     if ('startViewTransition' in document) {
       document.addEventListener('click', (e) => {
         const link = e.target.closest('a');
