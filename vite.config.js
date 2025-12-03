@@ -6,12 +6,6 @@ export default defineConfig({
   build: {
     outDir: '../dist-vanilla',
     emptyOutDir: true,
-    rollupOptions: {
-      input: {
-        main: './vanilla/index.html',
-        gallery: './vanilla/gallery.html',
-      },
-    },
   },
   server: {
     port: 3001,
