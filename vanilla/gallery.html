@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery - Arvista</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Montserrat:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  
+  <!-- Premium Navigation -->
+  <nav class="nav" data-gradient-border>
+    <div class="nav-logo" data-magnetic>
+      <a href="/index.html">ARVISTA</a>
+    </div>
+    <ul class="nav-menu">
+      <li class="nav-item" data-magnetic><a href="/index.html">Home</a></li>
+      <li class="nav-item active" data-magnetic><a href="/gallery.html">Gallery</a></li>
+      <li class="nav-item" data-magnetic><a href="/about.html">About</a></li>
+      <li class="nav-item" data-magnetic><a href="/contact.html">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- Gallery Hero -->
+  <section class="gallery-hero">
+    <div class="hero-background-shapes"></div>
+    <div class="gallery-hero-content">
+      <h1 class="page-title" data-float>
+        <span class="title-line">G</span><span class="title-line">A</span><span class="title-line">L</span><span class="title-line">L</span><span class="title-line">E</span><span class="title-line">R</span><span class="title-line">Y</span>
+      </h1>
+      <p class="page-subtitle" data-advanced-reveal>Explore Our Curated Collection</p>
+      <div class="gallery-description">
+        <p>Immerse yourself in a world of artistic excellence</p>
+        <p>From timeless classics to contemporary masterpieces</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Advanced Filters -->
+  <section class="filter-section">
+    <div class="filter-container">
+      <button class="filter-btn active" data-filter="all" data-magnetic data-glow>All Artworks</button>
+      <button class="filter-btn" data-filter="oil" data-magnetic data-glow>Oil Paintings</button>
+      <button class="filter-btn" data-filter="watercolor" data-magnetic data-glow>Watercolor</button>
+      <button class="filter-btn" data-filter="digital" data-magnetic data-glow>Digital Art</button>
+      <button class="filter-btn" data-filter="sculpture" data-magnetic data-glow>Sculptures</button>
+      <button class="filter-btn" data-filter="photography" data-magnetic data-glow>Photography</button>
+    </div>
+    <div class="sort-container">
+      <select class="sort-select" id="sortSelect">
+        <option value="featured">Featured</option>
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="price-high">Price: High to Low</option>
+        <option value="price-low">Price: Low to High</option>
+        <option value="name">Name: A-Z</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Premium Gallery Grid -->
+  <section class="gallery-section">
+    <div class="gallery-grid-full" data-stagger-reveal></div>
+  </section>
+
+  <!-- Premium Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3 class="footer-title">ARVISTA</h3>
+        <p class="footer-text">Where art meets vision. Curating excellence since 2024.</p>
+      </div>
+      <div class="footer-section">
+        <h4 class="footer-heading">Quick Links</h4>
+        <ul class="footer-links">
+          <li><a href="/index.html">Home</a></li>
+          <li><a href="/gallery.html">Gallery</a></li>
+          <li><a href="/about.html">About</a></li>
+          <li><a href="/contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4 class="footer-heading">Connect</h4>
+        <ul class="footer-links">
+          <li><a href="#" data-glow>Instagram</a></li>
+          <li><a href="#" data-glow>Twitter</a></li>
+          <li><a href="#" data-glow>Facebook</a></li>
+          <li><a href="#" data-glow>Pinterest</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4 class="footer-heading">Newsletter</h4>
+        <form class="newsletter-form">
+          <input type="email" placeholder="Your email" class="newsletter-input">
+          <button type="submit" class="newsletter-btn" data-magnetic>Subscribe</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2024 Arvista. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module">
+    // Enhanced artwork data
+    window.artworksData = [
+      {
+        id: 1,
+        title: 'Ethereal Dreams',
+        category: 'oil',
+        artist: 'Elena Moretti',
+        price: 12500,
+        year: 2024,
+        image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800',
+        description: 'A mesmerizing oil painting capturing the essence of dreams'
+      },
+      {
+        id: 2,
+        title: 'Urban Symphony',
+        category: 'digital',
+        artist: 'Marcus Chen',
+        price: 8900,
+        year: 2024,
+        image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800',
+        description: 'Digital art exploring modern city landscapes'
+      },
+      {
+        id: 3,
+        title: 'Ocean Whispers',
+        category: 'watercolor',
+        artist: 'Sofia Rodriguez',
+        price: 6500,
+        year: 2023,
+        image: 'https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=800',
+        description: 'Delicate watercolor portraying ocean serenity'
+      },
+      {
+        id: 4,
+        title: 'Timeless Form',
+        category: 'sculpture',
+        artist: 'Alessandro Bianchi',
+        price: 28000,
+        year: 2024,
+        image: 'https://images.unsplash.com/photo-1578926078164-01a057cf72e4?w=800',
+        description: 'Bronze sculpture representing eternal beauty'
+      },
+      {
+        id: 5,
+        title: 'Captured Moment',
+        category: 'photography',
+        artist: 'Yuki Tanaka',
+        price: 4200,
+        year: 2024,
+        image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+        description: 'Fine art photography freezing time'
+      },
+      {
+        id: 6,
+        title: 'Golden Horizon',
+        category: 'oil',
+        artist: 'Isabella Laurent',
+        price: 15000,
+        year: 2023,
+        image: 'https://images.unsplash.com/photo-1549887552-1eca0c5e9f4b?w=800',
+        description: 'Oil masterpiece with luminous golden tones'
+      },
+      {
+        id: 7,
+        title: 'Digital Cosmos',
+        category: 'digital',
+        artist: 'Raj Patel',
+        price: 7500,
+        year: 2024,
+        image: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800',
+        description: 'Cosmic digital art with vibrant energy'
+      },
+      {
+        id: 8,
+        title: 'Spring Awakening',
+        category: 'watercolor',
+        artist: 'Amélie Dubois',
+        price: 5800,
+        year: 2024,
+        image: 'https://images.unsplash.com/photo-1533158326339-7f3cf2404354?w=800',
+        description: 'Watercolor celebrating spring rebirth'
+      },
+      {
+        id: 9,
+        title: 'Modern Icon',
+        category: 'sculpture',
+        artist: 'Viktor Kozlov',
+        price: 32000,
+        year: 2024,
+        image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
+        description: 'Contemporary sculpture in marble'
+      },
+      {
+        id: 10,
+        title: 'Sunset Boulevard',
+        category: 'photography',
+        artist: 'Emma Wilson',
+        price: 3900,
+        year: 2023,
+        image: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800',
+        description: 'Urban photography at golden hour'
+      },
+      {
+        id: 11,
+        title: 'Midnight Garden',
+        category: 'oil',
+        artist: 'Chen Wei',
+        price: 14500,
+        year: 2024,
+        image: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=800',
+        description: 'Nocturnal oil painting with mystical atmosphere'
+      },
+      {
+        id: 12,
+        title: 'Neon Dreams',
+        category: 'digital',
+        artist: 'Alex Kim',
+        price: 9200,
+        year: 2024,
+        image: 'https://images.unsplash.com/photo-1550859492-d5da9d8e45f3?w=800',
+        description: 'Futuristic digital art with neon aesthetics'
+      }
+    ];
+  </script>
+  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/gallery-page.js"></script>
+</body>
+</html>

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Arvista - Where Art Meets Vision</title>
   
-  <!-- Fonts -->
+  <!-- Premium Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Montserrat:wght@300;400;500;600;700;800;900&family=Cinzel:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/logo.svg">
@@ -35,9 +35,43 @@
 
   <!-- Ultra Premium Hero Section -->
   <section class="hero">
-    <h1 class="hero-title" data-float>ARVISTA</h1>
+    <div class="hero-background-shapes"></div>
+    <h1 class="hero-title" data-float>
+      <span class="title-line">A</span><span class="title-line">R</span><span class="title-line">V</span><span class="title-line">I</span><span class="title-line">S</span><span class="title-line">T</span><span class="title-line">A</span>
+    </h1>
     <p class="hero-subtitle" data-advanced-reveal>WHERE ART MEETS VISION</p>
-    <button class="hero-cta" data-magnetic data-ripple data-glow>Explore Gallery</button>
+    <div class="hero-description">
+      <p>Discover a curated collection of extraordinary artworks</p>
+      <p>From classic oil paintings to modern digital masterpieces</p>
+    </div>
+    <button class="hero-cta" data-magnetic data-ripple data-glow>
+      <span>Explore Gallery</span>
+      <svg class="cta-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats-section">
+    <div class="stats-container">
+      <div class="stat-item" data-reveal>
+        <h3 class="stat-number" data-counter data-counter-target="500">0</h3>
+        <p class="stat-label">Artworks</p>
+      </div>
+      <div class="stat-item" data-reveal>
+        <h3 class="stat-number" data-counter data-counter-target="50">0</h3>
+        <p class="stat-label">Artists</p>
+      </div>
+      <div class="stat-item" data-reveal>
+        <h3 class="stat-number" data-counter data-counter-target="1000">0</h3>
+        <p class="stat-label">Collectors</p>
+      </div>
+      <div class="stat-item" data-reveal>
+        <h3 class="stat-number" data-counter data-counter-target="25">0</h3>
+        <p class="stat-label">Countries</p>
+      </div>
+    </div>
   </section>
 
   <!-- Featured Gallery Preview -->
