@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arvista - Where Art Meets Vision</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/vanilla/css/main.css">
+  
+  <!-- Meta -->
+  <meta name="description" content="Original artworks spanning oil paintings, watercolors, pencil sketches, and concept art.">
+  <meta name="theme-color" content="#000000">
+</head>
+<body>
+  
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-logo" data-magnetic>ARVISTA</div>
+    <ul class="nav-items">
+      <li class="nav-item" data-magnetic><a href="/">Home</a></li>
+      <li class="nav-item" data-magnetic><a href="/gallery.html">Gallery</a></li>
+      <li class="nav-item" data-magnetic><a href="/about.html">About</a></li>
+      <li class="nav-item" data-magnetic><a href="/contact.html">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1 class="hero-title">ARVISTA</h1>
+    <p class="hero-subtitle" data-text-reveal>WHERE ART MEETS VISION</p>
+    <button class="hero-cta" data-magnetic>Explore Gallery</button>
+  </section>
+
+  <!-- Featured Gallery Preview -->
+  <section class="section-padding">
+    <h2 class="section-title" data-text-reveal>Featured Artworks</h2>
+    <div class="gallery-grid"></div>
+  </section>
+
+  <!-- Scripts -->
+  <script type="module">
+    // Sample artwork data (replace with API call)
+    window.artworksData = [
+      {
+        id: 1,
+        title: 'Abstract Sunset',
+        category: 'Oil Painting',
+        image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=600',
+      },
+      {
+        id: 2,
+        title: 'Urban Dreams',
+        category: 'Digital Art',
+        image: 'https://images.unsplash.com/photo-1549887534-1541e9326642?w=600',
+      },
+      {
+        id: 3,
+        title: 'Nature\'s Embrace',
+        category: 'Watercolor',
+        image: 'https://images.unsplash.com/photo-1577083552431-6e5fd01988ec?w=600',
+      },
+      {
+        id: 4,
+        title: 'Geometric Harmony',
+        category: 'Concept Art',
+        image: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=600',
+      },
+      {
+        id: 5,
+        title: 'Color Symphony',
+        category: 'Mixed Media',
+        image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600',
+      },
+      {
+        id: 6,
+        title: 'Ethereal Forms',
+        category: 'Oil Painting',
+        image: 'https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=600',
+      },
+    ];
+  </script>
+  <script type="module" src="/vanilla/js/main.js"></script>
+
+</body>
+</html>
