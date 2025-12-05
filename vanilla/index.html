@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arvista - Where Art Meets Vision</title>
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Montserrat:wght@300;400;500;600;700;800;900&family=Cinzel:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="stylesheet" href="/css/cart.css">
+  <link rel="stylesheet" href="/css/cursor.css">
+  <link rel="stylesheet" href="/css/loading.css">
+  
+  <!-- Meta -->
+  <meta name="description" content="Original artworks spanning oil paintings, watercolors, pencil sketches, and concept art.">
+  <meta name="theme-color" content="#000000">
+</head>
+<body>
+  
+  <!-- Ultra Premium Navigation -->
+  <nav class="nav">
+    <div class="nav-logo" data-magnetic data-text-gradient>ARVISTA</div>
+    <ul class="nav-items">
+      <li class="nav-item" data-magnetic><a href="/">Home</a></li>
+      <li class="nav-item" data-magnetic><a href="/gallery.html">Gallery</a></li>
+      <li class="nav-item" data-magnetic><a href="/about.html">About</a></li>
+      <li class="nav-item" data-magnetic><a href="/contact.html">Contact</a></li>
+      
+      <!-- Cart Icon -->
+      <li class="nav-item">
+        <div class="cart-icon" data-magnetic>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="9" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
+            <circle cx="20" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" 
+                  stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+      </li>
+      
+      <!-- Auth Buttons -->
+      <li class="nav-item auth-nav-item login-btn" data-magnetic>
+        <span>Sign In</span>
+      </li>
+      
+      <!-- User Menu (hidden by default) -->
+      <li class="nav-item auth-nav-item user-menu">
+        <div class="user-avatar">A</div>
+        <span class="user-name">User</span>
+        <div class="user-dropdown">
+          <div class="user-dropdown-item" data-action="profile">Profile</div>
+          <div class="user-dropdown-item" data-action="orders">Orders</div>
+          <div class="user-dropdown-item" data-action="favorites">Favorites</div>
+          <div class="user-dropdown-divider"></div>
+          <div class="user-dropdown-item" data-action="logout">Logout</div>
+        </div>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Ultra Premium Hero Section -->
+  <section class="hero">
+    <div class="hero-background-shapes"></div>
+    <h1 class="hero-title" data-float>
+      <span class="title-line">A</span><span class="title-line">R</span><span class="title-line">V</span><span class="title-line">I</span><span class="title-line">S</span><span class="title-line">T</span><span class="title-line">A</span>
+    </h1>
+    <p class="hero-subtitle" data-advanced-reveal>WHERE ART MEETS VISION</p>
+    <div class="hero-description">
+      <p>Discover a curated collection of extraordinary artworks</p>
+      <p>From classic oil paintings to modern digital masterpieces</p>
+    </div>
+    <button class="hero-cta" data-magnetic data-ripple data-glow>
+      <span>Explore Gallery</span>
+      <svg class="cta-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats-section">
+    <div class="stats-container">
+      <div class="stat-item" data-reveal>
+        <h3 class="stat-number" data-counter data-counter-target="500">0</h3>
+        <p class="stat-label">Artworks</p>
+      </div>
+      <div class="stat-item" data-reveal>
+        <h3 class="stat-number" data-counter data-counter-target="50">0</h3>
+        <p class="stat-label">Artists</p>
+      </div>
+      <div class="stat-item" data-reveal>
+        <h3 class="stat-number" data-counter data-counter-target="1000">0</h3>
+        <p class="stat-label">Collectors</p>
+      </div>
+      <div class="stat-item" data-reveal>
+        <h3 class="stat-number" data-counter data-counter-target="25">0</h3>
+        <p class="stat-label">Countries</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Gallery Preview -->
+  <section class="section-padding">
+    <h2 class="section-title" data-advanced-reveal>Featured Artworks</h2>
+    <div class="gallery-grid" data-stagger-reveal></div>
+  </section>
+
+  <!-- Scripts -->
+  <script type="module">
+    // Sample artwork data (replace with API call)
+    window.artworksData = [
+      {
+        id: 1,
+        title: 'Abstract Sunset',
+        category: 'Oil Painting',
+        image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=600',
+      },
+      {
+        id: 2,
+        title: 'Urban Dreams',
+        category: 'Digital Art',
+        image: 'https://images.unsplash.com/photo-1549887534-1541e9326642?w=600',
+      },
+      {
+        id: 3,
+        title: 'Nature\'s Embrace',
+        category: 'Watercolor',
+        image: 'https://images.unsplash.com/photo-1577083552431-6e5fd01988ec?w=600',
+      },
+      {
+        id: 4,
+        title: 'Geometric Harmony',
+        category: 'Concept Art',
+        image: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=600',
+      },
+      {
+        id: 5,
+        title: 'Color Symphony',
+        category: 'Mixed Media',
+        image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600',
+      },
+      {
+        id: 6,
+        title: 'Ethereal Forms',
+        category: 'Oil Painting',
+        image: 'https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=600',
+      },
+    ];
+  </script>
+  <script type="module" src="/js/main.js"></script>
+  
+  <!-- Initialize new features -->
+  <script type="module">
+    import { auth } from '/js/auth/AuthManager.js';
+    import { cart } from '/js/components/ShoppingCart.js';
+    import { customCursor } from '/js/components/CustomCursor.js';
+    import { loadingScreen } from '/js/components/LoadingScreen.js';
+    import { pageTransitions } from '/js/animations/pageTransitions.js';
+    import { advancedParallax } from '/js/animations/advancedParallax.js';
+    
+    // Setup cart icon click
+    document.querySelector('.cart-icon').addEventListener('click', () => {
+      cart.toggleCart();
+    });
+    
+    // Setup login button
+    document.querySelector('.login-btn').addEventListener('click', () => {
+      auth.showLoginModal();
+    });
+    
+    // Setup user dropdown actions
+    document.querySelectorAll('[data-action]').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        if (action === 'logout') {
+          auth.logout();
+        } else if (action === 'profile') {
+          window.location.href = '/profile.html';
+        } else if (action === 'orders') {
+          window.location.href = '/orders.html';
+        } else if (action === 'favorites') {
+          window.location.href = '/favorites.html';
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
+
