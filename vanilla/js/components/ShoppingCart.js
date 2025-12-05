@@ -1,6 +1,6 @@
 // Shopping Cart Manager
-import { api } from './api/client.js';
-import { auth } from './auth/AuthManager.js';
+import { api } from '../api/client.js';
+import { auth } from '../auth/AuthManager.js';
 import { gsap } from 'gsap';
 
 export class ShoppingCart {

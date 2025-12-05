@@ -1,5 +1,5 @@
 // Authentication Manager
-import { api } from './api/client.js';
+import { api } from '../api/client.js';
 import { gsap } from 'gsap';
 
 export class AuthManager {
