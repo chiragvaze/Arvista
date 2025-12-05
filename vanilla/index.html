@@ -15,6 +15,10 @@
   
   <!-- Styles -->
   <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="stylesheet" href="/css/cart.css">
+  <link rel="stylesheet" href="/css/cursor.css">
+  <link rel="stylesheet" href="/css/loading.css">
   
   <!-- Meta -->
   <meta name="description" content="Original artworks spanning oil paintings, watercolors, pencil sketches, and concept art.">
@@ -30,6 +34,36 @@
       <li class="nav-item" data-magnetic><a href="/gallery.html">Gallery</a></li>
       <li class="nav-item" data-magnetic><a href="/about.html">About</a></li>
       <li class="nav-item" data-magnetic><a href="/contact.html">Contact</a></li>
+      
+      <!-- Cart Icon -->
+      <li class="nav-item">
+        <div class="cart-icon" data-magnetic>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="9" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
+            <circle cx="20" cy="21" r="1" stroke="currentColor" stroke-width="2"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" 
+                  stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+      </li>
+      
+      <!-- Auth Buttons -->
+      <li class="nav-item auth-nav-item login-btn" data-magnetic>
+        <span>Sign In</span>
+      </li>
+      
+      <!-- User Menu (hidden by default) -->
+      <li class="nav-item auth-nav-item user-menu">
+        <div class="user-avatar">A</div>
+        <span class="user-name">User</span>
+        <div class="user-dropdown">
+          <div class="user-dropdown-item" data-action="profile">Profile</div>
+          <div class="user-dropdown-item" data-action="orders">Orders</div>
+          <div class="user-dropdown-item" data-action="favorites">Favorites</div>
+          <div class="user-dropdown-divider"></div>
+          <div class="user-dropdown-item" data-action="logout">Logout</div>
+        </div>
+      </li>
     </ul>
   </nav>
 
@@ -123,6 +157,43 @@
     ];
   </script>
   <script type="module" src="/js/main.js"></script>
+  
+  <!-- Initialize new features -->
+  <script type="module">
+    import { auth } from '/js/auth/AuthManager.js';
+    import { cart } from '/js/components/ShoppingCart.js';
+    import { customCursor } from '/js/components/CustomCursor.js';
+    import { loadingScreen } from '/js/components/LoadingScreen.js';
+    import { pageTransitions } from '/js/animations/pageTransitions.js';
+    import { advancedParallax } from '/js/animations/advancedParallax.js';
+    
+    // Setup cart icon click
+    document.querySelector('.cart-icon').addEventListener('click', () => {
+      cart.toggleCart();
+    });
+    
+    // Setup login button
+    document.querySelector('.login-btn').addEventListener('click', () => {
+      auth.showLoginModal();
+    });
+    
+    // Setup user dropdown actions
+    document.querySelectorAll('[data-action]').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        if (action === 'logout') {
+          auth.logout();
+        } else if (action === 'profile') {
+          window.location.href = '/profile.html';
+        } else if (action === 'orders') {
+          window.location.href = '/orders.html';
+        } else if (action === 'favorites') {
+          window.location.href = '/favorites.html';
+        }
+      });
+    });
+  </script>
 
 </body>
 </html>
+
