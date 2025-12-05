@@ -2174,3 +2174,43 @@ img[loading="lazy"] {
   }
 }
 
+
+
+/* Add to Cart Button */
+.add-to-cart-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  border: none;
+  border-radius: 25px;
+  color: #0A0A0F;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.gallery-item:hover .add-to-cart-btn,
+.artwork-card:hover .add-to-cart-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.add-to-cart-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+}
+
+.add-to-cart-btn svg {
+  width: 16px;
+  height: 16px;
+}

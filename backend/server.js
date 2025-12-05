@@ -1,27 +1,33 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { User } from './models/User.js';
+import { Artwork } from './models/Artwork.js';
+import { Cart } from './models/Cart.js';
+import { Order } from './models/Order.js';
+import { Favorite } from './models/Favorite.js';
+import { Review } from './models/Review.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3003;
 
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/arvista')
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// In-memory data stores (replace with database later)
-const users = [];
-const artworks = [];
-const carts = new Map();
-const orders = [];
-const favorites = new Map();
-const reviews = [];
-
 // Auth middleware
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   
   if (!token) {
@@ -29,9 +35,8 @@ const authMiddleware = (req, res, next) => {
   }
   
   try {
-    // Simple token validation (use JWT in production)
-    const userId = token.split('-')[0];
-    req.userId = userId;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
     next();
   } catch (error) {
     res.status(401).json({ message: 'Invalid token' });
@@ -39,278 +44,387 @@ const authMiddleware = (req, res, next) => {
 };
 
 // AUTH ROUTES
-app.post('/api/auth/register', (req, res) => {
-  const { email, password, name } = req.body;
-  
-  // Check if user exists
-  if (users.find(u => u.email === email)) {
-    return res.status(400).json({ message: 'User already exists' });
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create user
+    const user = await User.create({
+      email,
+      name,
+      password: hashedPassword
+    });
+    
+    // Generate JWT
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
+    res.json({
+      token,
+      user: { 
+        id: user._id, 
+        email: user.email, 
+        name: user.name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  const user = {
-    id: Date.now().toString(),
-    email,
-    name,
-    password, // Hash in production!
-    createdAt: new Date()
-  };
-  
-  users.push(user);
-  
-  const token = `${user.id}-${Date.now()}`;
-  
-  res.json({
-    token,
-    user: { id: user.id, email: user.email, name: user.name }
-  });
 });
 
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  const user = users.find(u => u.email === email && u.password === password);
-  
-  if (!user) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    
+    // Generate JWT
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
+    res.json({
+      token,
+      user: { 
+        id: user._id, 
+        email: user.email, 
+        name: user.name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  const token = `${user.id}-${Date.now()}`;
-  
-  res.json({
-    token,
-    user: { id: user.id, email: user.email, name: user.name }
-  });
 });
 
-app.get('/api/auth/profile', authMiddleware, (req, res) => {
-  const user = users.find(u => u.id === req.userId);
-  
-  if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+app.get('/api/auth/profile', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ 
+      id: user._id, 
+      email: user.email, 
+      name: user.name,
+      role: user.role,
+      avatar: user.avatar
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  res.json({ id: user.id, email: user.email, name: user.name });
 });
 
 // ARTWORK ROUTES
-app.get('/api/artworks', (req, res) => {
-  const { category, sort, search } = req.query;
-  let filtered = [...artworks];
-  
-  if (category && category !== 'all') {
-    filtered = filtered.filter(a => a.category === category);
-  }
-  
-  if (search) {
-    filtered = filtered.filter(a => 
-      a.title.toLowerCase().includes(search.toLowerCase()) ||
-      a.artist.toLowerCase().includes(search.toLowerCase())
-    );
-  }
-  
-  if (sort) {
-    switch(sort) {
-      case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
-        break;
-      case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
-        break;
-      case 'newest':
-        filtered.sort((a, b) => b.year - a.year);
-        break;
-      case 'oldest':
-        filtered.sort((a, b) => a.year - b.year);
-        break;
+app.get('/api/artworks', async (req, res) => {
+  try {
+    const { category, sort, search } = req.query;
+    let query = {};
+    
+    // Category filter
+    if (category && category !== 'all') {
+      query.category = category;
     }
+    
+    // Search filter
+    if (search) {
+      query.$text = { $search: search };
+    }
+    
+    // Build query
+    let artworkQuery = Artwork.find(query);
+    
+    // Sorting
+    if (sort === 'price-low') {
+      artworkQuery = artworkQuery.sort({ price: 1 });
+    } else if (sort === 'price-high') {
+      artworkQuery = artworkQuery.sort({ price: -1 });
+    } else if (sort === 'newest') {
+      artworkQuery = artworkQuery.sort({ createdAt: -1 });
+    } else if (sort === 'popular') {
+      artworkQuery = artworkQuery.sort({ reviewCount: -1, averageRating: -1 });
+    }
+    
+    const artworks = await artworkQuery;
+    res.json(artworks);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  res.json({ artworks: filtered, total: filtered.length });
 });
 
-app.get('/api/artworks/:id', (req, res) => {
-  const artwork = artworks.find(a => a.id === req.params.id);
-  
-  if (!artwork) {
-    return res.status(404).json({ message: 'Artwork not found' });
+app.get('/api/artworks/:id', async (req, res) => {
+  try {
+    const artwork = await Artwork.findById(req.params.id);
+    if (!artwork) {
+      return res.status(404).json({ message: 'Artwork not found' });
+    }
+    res.json(artwork);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  res.json(artwork);
 });
 
-app.post('/api/artworks', authMiddleware, (req, res) => {
-  const artwork = {
-    id: Date.now().toString(),
-    ...req.body,
-    createdAt: new Date()
-  };
-  
-  artworks.push(artwork);
-  res.status(201).json(artwork);
+app.post('/api/artworks', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    const user = await User.findById(req.userId);
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    const artwork = await Artwork.create(req.body);
+    res.status(201).json(artwork);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 });
 
 // CART ROUTES
-app.get('/api/cart', authMiddleware, (req, res) => {
-  const userCart = carts.get(req.userId) || [];
-  res.json({ items: userCart, total: userCart.reduce((sum, item) => sum + item.price * item.quantity, 0) });
-});
-
-app.post('/api/cart/add', authMiddleware, (req, res) => {
-  const { artworkId, quantity } = req.body;
-  const artwork = artworks.find(a => a.id === artworkId);
-  
-  if (!artwork) {
-    return res.status(404).json({ message: 'Artwork not found' });
+app.get('/api/cart', authMiddleware, async (req, res) => {
+  try {
+    let cart = await Cart.findOne({ user: req.userId }).populate('items.artwork');
+    
+    if (!cart) {
+      cart = await Cart.create({ user: req.userId, items: [] });
+    }
+    
+    res.json(cart);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  const userCart = carts.get(req.userId) || [];
-  const existingItem = userCart.find(item => item.artworkId === artworkId);
-  
-  if (existingItem) {
-    existingItem.quantity += quantity;
-  } else {
-    userCart.push({
-      id: Date.now().toString(),
-      artworkId,
-      title: artwork.title,
-      price: artwork.price,
-      image: artwork.image,
-      quantity
-    });
+});
+
+app.post('/api/cart/add', authMiddleware, async (req, res) => {
+  try {
+    const { artworkId, quantity = 1 } = req.body;
+    
+    // Verify artwork exists
+    const artwork = await Artwork.findById(artworkId);
+    if (!artwork) {
+      return res.status(404).json({ message: 'Artwork not found' });
+    }
+    
+    let cart = await Cart.findOne({ user: req.userId });
+    
+    if (!cart) {
+      cart = await Cart.create({
+        user: req.userId,
+        items: [{ artwork: artworkId, quantity }]
+      });
+    } else {
+      // Check if item already in cart
+      const existingItem = cart.items.find(
+        item => item.artwork.toString() === artworkId
+      );
+      
+      if (existingItem) {
+        existingItem.quantity += quantity;
+      } else {
+        cart.items.push({ artwork: artworkId, quantity });
+      }
+      
+      await cart.save();
+    }
+    
+    cart = await cart.populate('items.artwork');
+    res.json(cart);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  carts.set(req.userId, userCart);
-  res.json({ items: userCart });
 });
 
-app.delete('/api/cart/remove/:itemId', authMiddleware, (req, res) => {
-  const userCart = carts.get(req.userId) || [];
-  const filtered = userCart.filter(item => item.id !== req.params.itemId);
-  carts.set(req.userId, filtered);
-  res.json({ items: filtered });
+app.delete('/api/cart/remove/:artworkId', authMiddleware, async (req, res) => {
+  try {
+    const cart = await Cart.findOne({ user: req.userId });
+    
+    if (!cart) {
+      return res.status(404).json({ message: 'Cart not found' });
+    }
+    
+    cart.items = cart.items.filter(
+      item => item.artwork.toString() !== req.params.artworkId
+    );
+    
+    await cart.save();
+    await cart.populate('items.artwork');
+    
+    res.json(cart);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 });
 
-app.delete('/api/cart/clear', authMiddleware, (req, res) => {
-  carts.set(req.userId, []);
-  res.json({ message: 'Cart cleared' });
+app.delete('/api/cart/clear', authMiddleware, async (req, res) => {
+  try {
+    const cart = await Cart.findOne({ user: req.userId });
+    
+    if (!cart) {
+      return res.json({ items: [] });
+    }
+    
+    cart.items = [];
+    await cart.save();
+    
+    res.json(cart);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 });
 
 // ORDER ROUTES
-app.post('/api/orders', authMiddleware, (req, res) => {
-  const userCart = carts.get(req.userId) || [];
-  
-  if (userCart.length === 0) {
-    return res.status(400).json({ message: 'Cart is empty' });
+app.post('/api/orders', authMiddleware, async (req, res) => {
+  try {
+    const { items, shippingAddress, paymentMethod } = req.body;
+    
+    // Calculate total
+    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    // Create order
+    const order = await Order.create({
+      user: req.userId,
+      items: items.map(item => ({
+        artwork: item.artworkId,
+        title: item.title,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      totalAmount,
+      shippingAddress,
+      paymentMethod
+    });
+    
+    // Clear cart
+    await Cart.findOneAndUpdate(
+      { user: req.userId },
+      { items: [] }
+    );
+    
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  const order = {
-    id: Date.now().toString(),
-    userId: req.userId,
-    items: userCart,
-    total: userCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    status: 'pending',
-    createdAt: new Date(),
-    ...req.body
-  };
-  
-  orders.push(order);
-  carts.set(req.userId, []); // Clear cart
-  
-  res.status(201).json(order);
 });
 
-app.get('/api/orders', authMiddleware, (req, res) => {
-  const userOrders = orders.filter(o => o.userId === req.userId);
-  res.json({ orders: userOrders });
+app.get('/api/orders', authMiddleware, async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.userId })
+      .populate('items.artwork')
+      .sort({ createdAt: -1 });
+    
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 });
 
 // FAVORITES ROUTES
-app.get('/api/favorites', authMiddleware, (req, res) => {
-  const userFavorites = favorites.get(req.userId) || [];
-  const favoriteArtworks = artworks.filter(a => userFavorites.includes(a.id));
-  res.json({ favorites: favoriteArtworks });
-});
-
-app.post('/api/favorites/add', authMiddleware, (req, res) => {
-  const { artworkId } = req.body;
-  const userFavorites = favorites.get(req.userId) || [];
-  
-  if (!userFavorites.includes(artworkId)) {
-    userFavorites.push(artworkId);
-    favorites.set(req.userId, userFavorites);
+app.get('/api/favorites', authMiddleware, async (req, res) => {
+  try {
+    const favorites = await Favorite.find({ user: req.userId })
+      .populate('artwork')
+      .sort({ addedAt: -1 });
+    
+    res.json(favorites);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  res.json({ message: 'Added to favorites' });
 });
 
-app.delete('/api/favorites/remove/:artworkId', authMiddleware, (req, res) => {
-  const userFavorites = favorites.get(req.userId) || [];
-  const filtered = userFavorites.filter(id => id !== req.params.artworkId);
-  favorites.set(req.userId, filtered);
-  res.json({ message: 'Removed from favorites' });
+app.post('/api/favorites/add', authMiddleware, async (req, res) => {
+  try {
+    const { artworkId } = req.body;
+    
+    // Check if already favorited
+    const existing = await Favorite.findOne({
+      user: req.userId,
+      artwork: artworkId
+    });
+    
+    if (existing) {
+      return res.status(400).json({ message: 'Already in favorites' });
+    }
+    
+    const favorite = await Favorite.create({
+      user: req.userId,
+      artwork: artworkId
+    });
+    
+    await favorite.populate('artwork');
+    res.json(favorite);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+app.delete('/api/favorites/remove/:artworkId', authMiddleware, async (req, res) => {
+  try {
+    await Favorite.findOneAndDelete({
+      user: req.userId,
+      artwork: req.params.artworkId
+    });
+    
+    res.json({ message: 'Removed from favorites' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 });
 
 // SEARCH ROUTE
-app.get('/api/search', (req, res) => {
-  const { q } = req.query;
-  
-  const results = artworks.filter(a =>
-    a.title.toLowerCase().includes(q.toLowerCase()) ||
-    a.artist.toLowerCase().includes(q.toLowerCase()) ||
-    a.category.toLowerCase().includes(q.toLowerCase())
-  );
-  
-  res.json({ results, total: results.length });
+app.get('/api/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q) {
+      return res.json([]);
+    }
+    
+    const artworks = await Artwork.find({
+      $text: { $search: q }
+    }).limit(20);
+    
+    res.json(artworks);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 });
 
-// Seed some initial data
-const seedData = () => {
-  if (artworks.length === 0) {
-    const sampleArtworks = [
-      {
-        id: '1',
-        title: 'Ethereal Dreams',
-        category: 'oil',
-        artist: 'Elena Moretti',
-        price: 12500,
-        year: 2024,
-        image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800',
-        description: 'A mesmerizing oil painting capturing the essence of dreams',
-        inStock: true
-      },
-      {
-        id: '2',
-        title: 'Urban Symphony',
-        category: 'digital',
-        artist: 'Marcus Chen',
-        price: 8900,
-        year: 2024,
-        image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800',
-        description: 'Digital art exploring modern city landscapes',
-        inStock: true
-      },
-      {
-        id: '3',
-        title: 'Ocean Whispers',
-        category: 'watercolor',
-        artist: 'Sofia Rodriguez',
-        price: 6500,
-        year: 2023,
-        image: 'https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=800',
-        description: 'Delicate watercolor portraying ocean serenity',
-        inStock: true
-      }
-    ];
-    
-    artworks.push(...sampleArtworks);
-    console.log('✅ Seeded sample artworks');
-  }
-};
-
-seedData();
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    timestamp: new Date()
+  });
+});
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Backend API running on http://localhost:${PORT}`);
-  console.log(`📊 API endpoints available at http://localhost:${PORT}/api`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
 });
