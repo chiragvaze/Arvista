@@ -2,6 +2,8 @@
 /node_modules
 /.pnp
 .pnp.js
+backend/node_modules
+vanilla/node_modules
 
 # testing
 /coverage
@@ -12,6 +14,7 @@
 
 # production
 /build
+vanilla/dist
 
 # misc
 .DS_Store
@@ -25,6 +28,7 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+backend/.env
 
 # vercel
 .vercel
@@ -34,3 +38,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Package locks (keeping them tracked for now)
+# backend/package-lock.json
+# vanilla/package-lock.json
