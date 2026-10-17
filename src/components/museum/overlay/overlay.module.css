@@ -1,0 +1,531 @@
+/* ---------- Scroll track and sticky stage ---------- */
+
+.track {
+  position: relative;
+  /* height is set inline from the timeline length */
+}
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--color-night);
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgb(8 6 4 / 0.55) 100%);
+}
+
+/* ---------- Entrance branding ---------- */
+
+.hero {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.5rem;
+  pointer-events: none;
+  text-align: center;
+  color: var(--color-ivory);
+}
+
+.heroBrand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(-6vh);
+  text-shadow: 0 2px 18px rgb(10 6 3 / 0.75);
+}
+
+.heroTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.6rem, 7vw, 5.4rem);
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #f1dfbd;
+  /* optical centring: letter-spacing adds trailing space */
+  padding-left: 0.16em;
+}
+
+.heroSubtitle {
+  display: block;
+  margin-top: 0.85rem;
+  font-family: var(--font-display);
+  font-size: clamp(0.72rem, 1.4vw, 0.95rem);
+  letter-spacing: 0.42em;
+  color: #e3cfa9;
+  padding-left: 0.42em;
+}
+
+.heroRule {
+  display: block;
+  width: 3.5rem;
+  height: 1px;
+  margin: 1.6rem 0 1.2rem;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+}
+
+.heroTagline {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  color: #efe3cf;
+}
+
+.scrollCue {
+  position: absolute;
+  bottom: clamp(1.5rem, 5vh, 3rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scrollCueText {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #e9dcc6;
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.8);
+}
+
+.scrollCueMouse {
+  position: relative;
+  width: 22px;
+  height: 34px;
+  border: 1.5px solid rgb(240 226 200 / 0.8);
+  border-radius: 12px;
+}
+
+.scrollCueDot {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 3px;
+  height: 7px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--color-gold);
+  animation: scrollCue 2.2s ease-in-out infinite;
+}
+
+@keyframes scrollCue {
+  0% { transform: translateY(0); opacity: 1; }
+  70% { transform: translateY(11px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
+/* ---------- Painting information ---------- */
+
+.panel {
+  /* Centred with auto margins so `transform` stays free for the GSAP fade */
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: clamp(5.5rem, 8vw, 8rem);
+  width: min(23rem, 31vw);
+  height: max-content;
+  max-height: 80vh;
+  margin-block: auto;
+  overflow-y: auto;
+  padding: 2rem 2rem 1.75rem;
+  background: rgb(18 13 9 / 0.86);
+  border: 1px solid rgb(201 164 106 / 0.28);
+  color: var(--color-ivory);
+  visibility: hidden;
+  opacity: 0;
+}
+
+.panelBadge {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.3rem 0.55rem;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: #1a120b;
+  background: #e8cf9e;
+}
+
+.panelEyebrow {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
+.panelTitle {
+  margin: 0 0 1.1rem;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+  line-height: 1.15;
+}
+
+.panelFacts {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0 0 1.1rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid rgb(244 236 223 / 0.14);
+  border-bottom: 1px solid rgb(244 236 223 / 0.14);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+}
+
+.panelFact {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.75rem;
+}
+
+.panelFact dt {
+  color: #b6a891;
+  letter-spacing: 0.04em;
+}
+
+.panelFact dd {
+  margin: 0;
+}
+
+.panelDescription {
+  margin: 0 0 1.4rem;
+  font-family: var(--font-serif);
+  font-size: 1.08rem;
+  line-height: 1.55;
+  color: #e6dccb;
+}
+
+.panelActions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.panelButton {
+  display: inline-block;
+  padding: 0.7rem 1.3rem;
+  border: 1px solid var(--color-gold);
+  background: transparent;
+  color: var(--color-ivory);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.panelButton:hover {
+  background: var(--color-gold);
+  color: #17100a;
+}
+
+.panelLink {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: #e3cfa9;
+  text-underline-offset: 0.3em;
+}
+
+/* ---------- Chapter navigation ---------- */
+
+.chapters {
+  position: absolute;
+  top: 50%;
+  right: clamp(1rem, 2.2vw, 2rem);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.chapterTrack {
+  position: absolute;
+  top: 0.9rem;
+  bottom: 0.9rem;
+  right: 0.95rem;
+  width: 1px;
+  background: rgb(244 236 223 / 0.18);
+}
+
+.chapterProgress {
+  position: absolute;
+  inset: 0;
+  background: var(--color-gold);
+  transform-origin: top;
+  transform: scaleY(0);
+}
+
+.chapterList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.chapterButton {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 1.8rem;
+  padding: 0 0.6rem 0 0.4rem;
+  border: 0;
+  background: transparent;
+  color: rgb(244 236 223 / 0.62);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.chapterLabel {
+  padding: 0.25rem 0.5rem;
+  background: rgb(17 12 8 / 0.88);
+  opacity: 0;
+  transform: translateX(6px);
+  transition: opacity 0.25s, transform 0.25s;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.9);
+  white-space: nowrap;
+}
+
+.chapterDot {
+  position: relative;
+  z-index: 1;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  border: 1px solid rgb(244 236 223 / 0.7);
+  background: var(--color-night);
+  transition: background-color 0.25s, transform 0.25s;
+}
+
+.chapterButton[aria-current="step"] {
+  color: var(--color-ivory);
+}
+
+.chapterButton[aria-current="step"] .chapterDot {
+  background: var(--color-gold);
+  border-color: var(--color-gold);
+  transform: scale(1.3);
+}
+
+/* Labels appear on hover/focus only, so they never cover the painting information panel. */
+.chapterButton:hover .chapterLabel,
+.chapterButton:focus-visible .chapterLabel {
+  opacity: 1;
+  transform: none;
+}
+
+.collectionLink {
+  position: absolute;
+  top: clamp(1rem, 2.5vh, 1.6rem);
+  right: clamp(1rem, 2.2vw, 2rem);
+  padding: 0.4rem 0.2rem;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(244 236 223 / 0.75);
+  text-decoration: none;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.9);
+}
+
+.collectionLink:hover {
+  color: var(--color-ivory);
+  text-decoration: underline;
+  text-underline-offset: 0.35em;
+}
+
+/* ---------- Loading screen ---------- */
+
+.loader {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  padding: 1.5rem;
+  background: var(--color-night);
+  color: var(--color-ivory);
+  text-align: center;
+  transition: opacity 0.9s ease, visibility 0s linear 0.9s;
+}
+
+.loader[data-visible="false"] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loaderBrand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.4em;
+  padding-left: 0.4em;
+  text-transform: uppercase;
+  color: #ead6b1;
+}
+
+.loaderBar {
+  position: relative;
+  width: 9rem;
+  height: 1px;
+  overflow: hidden;
+  background: rgb(201 164 106 / 0.2);
+}
+
+.loaderBar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--color-gold);
+  animation: loaderSweep 1.6s ease-in-out infinite;
+}
+
+@keyframes loaderSweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
+.loaderText {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1rem;
+  color: #cfc2ad;
+}
+
+.loaderSlow {
+  max-width: 24rem;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #cfc2ad;
+}
+
+.loaderSlow a {
+  color: #ead6b1;
+}
+
+/* ---------- Static (no WebGL) entrance ---------- */
+
+.staticEntrance {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 85vh;
+  padding: 4rem 1.5rem;
+  text-align: center;
+  color: var(--color-ivory);
+  background:
+    radial-gradient(ellipse at 50% 30%, rgb(120 82 44 / 0.35), transparent 60%),
+    var(--color-night);
+}
+
+.staticNotice {
+  max-width: 30rem;
+  margin: 2rem 0 1.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #cfc2ad;
+}
+
+/* ---------- Narrow and portrait screens ---------- */
+
+@media (max-aspect-ratio: 17/20), (max-width: 640px) {
+  .panel {
+    top: auto;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-height: 44dvh;
+    margin-block: 0;
+    padding: 1.25rem 1.25rem 1.1rem;
+  }
+
+  .panelTitle {
+    margin-bottom: 0.75rem;
+    font-size: 1.5rem;
+  }
+
+  .panelFacts {
+    margin-bottom: 0.75rem;
+    padding: 0.6rem 0;
+  }
+
+  .panelDescription {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+  }
+
+  /* Top right, clear of the bottom information sheet and the centred painting */
+  .chapters {
+    top: 3.25rem;
+    right: 0.4rem;
+    transform: none;
+  }
+
+  .heroBrand {
+    transform: translateY(-13vh);
+  }
+
+  .chapterList {
+    gap: 0.5rem;
+  }
+
+  .chapterLabel {
+    display: none;
+  }
+
+  .chapterTrack {
+    right: 0.82rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrollCueDot,
+  .loaderBar::after {
+    animation: none;
+  }
+
+  .loader {
+    transition: none;
+  }
+}

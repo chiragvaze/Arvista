@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500">
+  <!-- ARVISTA placeholder artwork. Not a real painting: replace via src/content/paintings.ts -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9dcc4"/>
+      <stop offset="0.45" stop-color="#efcf9e"/>
+      <stop offset="0.75" stop-color="#e2a46e"/>
+      <stop offset="1" stop-color="#c47b4f"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff4dc"/>
+      <stop offset="0.6" stop-color="#fbe2b0" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#f6c98a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9a77a"/>
+      <stop offset="1" stop-color="#7d5a44"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1500" fill="url(#sky)"/>
+  <circle cx="760" cy="640" r="230" fill="url(#sun)"/>
+  <circle cx="760" cy="640" r="92" fill="#fff1d6" opacity="0.92"/>
+  <path d="M0 760 C 160 640 300 700 420 650 C 560 590 640 690 780 660 C 930 630 1050 560 1200 620 L1200 1500 L0 1500 Z" fill="#b98a6a" opacity="0.75"/>
+  <path d="M0 860 C 180 780 330 840 470 790 C 640 730 760 830 910 800 C 1040 775 1120 740 1200 760 L1200 1500 L0 1500 Z" fill="#8f6550"/>
+  <path d="M0 960 C 220 900 380 960 560 920 C 760 875 900 960 1200 900 L1200 1500 L0 1500 Z" fill="#6b4a3c"/>
+  <rect x="0" y="1010" width="1200" height="300" fill="url(#water)"/>
+  <g stroke="#f7dcb2" stroke-linecap="round" opacity="0.55">
+    <line x1="640" y1="1050" x2="880" y2="1050" stroke-width="6"/>
+    <line x1="600" y1="1095" x2="920" y2="1095" stroke-width="4"/>
+    <line x1="680" y1="1140" x2="840" y2="1140" stroke-width="4"/>
+    <line x1="560" y1="1190" x2="960" y2="1190" stroke-width="3"/>
+  </g>
+  <path d="M0 1240 C 240 1190 420 1260 640 1230 C 860 1200 1000 1260 1200 1220 L1200 1500 L0 1500 Z" fill="#3e2b22"/>
+  <g fill="none" stroke="#2c1e17" stroke-width="10" stroke-linecap="round">
+    <path d="M180 1260 C 186 1150 176 1060 196 960"/>
+    <path d="M196 1030 C 150 990 120 990 92 1000"/>
+    <path d="M192 1080 C 240 1040 270 1036 300 1046"/>
+  </g>
+  <rect x="0" y="1360" width="1200" height="140" fill="#2a1d16" opacity="0.9"/>
+  <text x="600" y="1420" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="40" letter-spacing="10" fill="#f1e2c6">PLACEHOLDER ARTWORK</text>
+  <text x="600" y="1462" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" letter-spacing="3" fill="#c9b293">Replace with your own painting</text>
+</svg>
