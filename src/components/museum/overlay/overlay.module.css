@@ -186,7 +186,7 @@
 .panelFacts {
   display: grid;
   gap: 0.45rem;
-  margin: 0 0 1.1rem;
+  margin: 0 0 1.4rem;
   padding: 0.9rem 0;
   border-top: 1px solid rgb(244 236 223 / 0.14);
   border-bottom: 1px solid rgb(244 236 223 / 0.14);
@@ -210,11 +210,14 @@
 }
 
 .panelDescription {
-  margin: 0 0 1.4rem;
+  margin: 0 0 1.2rem;
   font-family: var(--font-serif);
-  font-size: 1.08rem;
-  line-height: 1.55;
+  font-style: italic;
+  font-size: 1.1rem;
+  line-height: 1.5;
   color: #e6dccb;
+  /* The artist's line breaks are part of the text */
+  white-space: pre-line;
 }
 
 .panelActions {

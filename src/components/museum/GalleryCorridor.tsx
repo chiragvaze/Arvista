@@ -1,7 +1,7 @@
 "use client";
 
 import { BackSide, BoxGeometry, CylinderGeometry, PlaneGeometry } from "three";
-import { CORRIDOR, VAULT_RADIUS, bayCenterZ, bayDividerZs } from "@/lib/museum/layout";
+import { BENCH_BAY, CORRIDOR, VAULT_RADIUS, bayCenterZ, bayDividerZs } from "@/lib/museum/layout";
 import { archBandGeometry, archedWallGeometry, scaleUVs } from "@/lib/museum/geometry";
 import type { QualityTier } from "@/lib/museum/deviceTier";
 import { useMuseumMaterials } from "./materials";
@@ -54,7 +54,8 @@ export function GalleryCorridor({ quality }: { quality: QualityTier }) {
   );
 
   const hallZ = CORRIDOR.endZ - END_WALL_THICKNESS;
-  const lightBays = quality === "high" ? [0, 2, 4] : [0, 3];
+  // Ambient corridor lights in alternate bays; each painting also has its own picture light.
+  const lightBays = Array.from({ length: CORRIDOR.bayCount }, (_, i) => i).filter((i) => i % (quality === "high" ? 2 : 3) === 0);
 
   return (
     <group>
@@ -93,7 +94,7 @@ export function GalleryCorridor({ quality }: { quality: QualityTier }) {
         <pointLight key={bay} position={[0, H - 0.9, bayCenterZ(bay)]} color="#ffe6c4" intensity={60} distance={26} decay={2} />
       ))}
 
-      <Bench position={[0, 0, bayCenterZ(4)]} />
+      <Bench position={[0, 0, bayCenterZ(BENCH_BAY)]} />
 
       {/* End wall with an archway into the next hall (a later phase). */}
       <mesh geometry={endWall} material={m.plaster} position={[0, 0, hallZ]} />

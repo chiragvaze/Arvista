@@ -1,5 +1,5 @@
 import type { Ref } from "react";
-import type { Chapter, ChapterId } from "@/lib/museum/scrollTimeline";
+import type { Chapter } from "@/lib/museum/scrollTimeline";
 import styles from "./overlay.module.css";
 
 /**
@@ -13,7 +13,7 @@ export function ChapterNav({
   progressRef,
 }: {
   chapters: Chapter[];
-  active: ChapterId;
+  active: string;
   onSelect: (chapter: Chapter) => void;
   progressRef?: Ref<HTMLSpanElement>;
 }) {

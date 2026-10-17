@@ -1,61 +1,85 @@
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { waypointIndex } from "./cameraWaypoints";
+import { cameraRoute, type RouteStep } from "./cameraWaypoints";
+import { galleryLayout } from "./galleryLayout";
 import type { MotionStore } from "./motion";
 
 /**
- * The scroll sequence, in abstract timeline units. One unit is
- * SCROLL_VH_PER_UNIT viewport heights of scrolling.
+ * The scroll sequence is the camera route laid end to end, in abstract timeline
+ * units (one unit = SCROLL_VH_PER_UNIT viewport heights of scrolling):
  *
- *   entrance  closed doors, branding visible
- *   doors     doors swing open while the camera approaches the portico
- *   threshold camera passes through the doorway
- *   corridor  camera walks along the gallery
- *   turn      camera turns toward the first painting and slows to a stop
- *   painting  hold: information panel visible
- *   onward    camera turns back down the corridor toward the next hall
+ *   entrance   closed doors, branding visible
+ *   doors      doors swing open while the camera approaches the porch
+ *   threshold  camera passes through the doorway
+ *   per painting:
+ *     walk     walk down the corridor toward it
+ *     turn     turn to face it and slow to a stop
+ *     view     pause with its information panel visible
+ *     resume   turn back to face down the corridor
+ *   onward     walk toward the next hall
  */
-export const PHASES = {
-  entrance: { start: 0, end: 0.7 },
-  doors: { start: 0.7, end: 3.1 },
-  threshold: { start: 3.1, end: 4.5 },
-  corridor: { start: 4.5, end: 5.4 },
-  turn: { start: 5.4, end: 7.3 },
-  painting: { start: 7.3, end: 9.4 },
-  onward: { start: 9.4, end: 11.1 },
-} as const;
+export interface PlannedStep extends RouteStep {
+  start: number;
+  end: number;
+}
 
-export const TIMELINE_LENGTH = 11.5;
-export const SCROLL_VH_PER_UNIT = 85;
+function planSteps(steps: readonly RouteStep[]): PlannedStep[] {
+  let time = 0;
+  return steps.map((step) => {
+    const planned = { ...step, start: time, end: time + step.duration };
+    time = planned.end;
+    return planned;
+  });
+}
 
-export type ChapterId = "entrance" | "gallery" | "painting" | "onward";
+export const TIMELINE_PLAN: PlannedStep[] = planSteps(cameraRoute.steps);
+export const TIMELINE_LENGTH = TIMELINE_PLAN[TIMELINE_PLAN.length - 1].end;
+export const SCROLL_VH_PER_UNIT = 72;
+
+function step(id: string): PlannedStep {
+  const found = TIMELINE_PLAN.find((s) => s.id === id);
+  if (!found) throw new Error(`Unknown timeline step: ${id}`);
+  return found;
+}
 
 export interface Chapter {
-  id: ChapterId;
+  id: string;
   label: string;
   /** Timeline position the chapter button scrolls to. */
   time: number;
+  /** Timeline position from which the chapter counts as current. */
+  from: number;
 }
 
+const onwardStep = step("onward");
+
 export const CHAPTERS: Chapter[] = [
-  { id: "entrance", label: "Entrance", time: 0 },
-  { id: "gallery", label: "Gallery", time: PHASES.corridor.start },
-  { id: "painting", label: "First painting", time: (PHASES.painting.start + PHASES.painting.end) / 2 },
-  { id: "onward", label: "Next hall", time: PHASES.onward.end },
+  { id: "entrance", label: "Entrance", time: 0, from: 0 },
+  ...galleryLayout.map(({ painting }) => {
+    const turn = step(`turn:${painting.id}`);
+    const view = step(`view:${painting.id}`);
+    return { id: painting.id, label: painting.title, time: (view.start + view.end) / 2, from: turn.start + turn.duration * 0.5 };
+  }),
+  { id: "next-hall", label: "Next hall", time: onwardStep.end, from: onwardStep.start + 0.4 },
 ];
 
-export function chapterAt(time: number): ChapterId {
-  if (time >= PHASES.onward.start + 0.4) return "onward";
-  if (time >= PHASES.turn.end - 0.3) return "painting";
-  if (time >= PHASES.threshold.start + 0.6) return "gallery";
-  return "entrance";
+export function chapterAt(time: number): string {
+  let current = CHAPTERS[0].id;
+  for (const chapter of CHAPTERS) if (time >= chapter.from) current = chapter.id;
+  return current;
+}
+
+/** Where the "Continue" button on a painting's panel leads: the next painting, or the next hall after the last. */
+export function nextChapterAfter(paintingIndex: number): Chapter {
+  return CHAPTERS[Math.min(paintingIndex + 2, CHAPTERS.length - 1)];
 }
 
 export interface TimelineTargets {
   store: MotionStore;
   track: HTMLElement;
   hero: HTMLElement;
-  panel: HTMLElement;
+  /** Information panels, indexed like galleryLayout. */
+  panels: readonly HTMLElement[];
   progress: HTMLElement;
   reducedMotion: boolean;
   onTime: (time: number) => void;
@@ -89,43 +113,38 @@ export function createMuseumTimeline(t: TimelineTargets): gsap.core.Timeline {
     onUpdate: () => t.store.notify(),
   });
 
-  const seg = (phase: keyof typeof PHASES) => ({
-    at: PHASES[phase].start,
-    duration: PHASES[phase].end - PHASES[phase].start,
-  });
-
-  // Keep the timeline exactly TIMELINE_LENGTH long so scroll progress maps 1:1 to phases.
+  // Keep the timeline exactly TIMELINE_LENGTH long so scroll progress maps 1:1 to the plan.
   tl.set({}, {}, TIMELINE_LENGTH);
   tl.fromTo(t.progress, { scaleY: 0 }, { scaleY: 1, duration: TIMELINE_LENGTH }, 0);
 
   // Doors open fully before the camera reaches the doorway.
-  const doors = seg("doors");
-  tl.fromTo(v, { doorOpen: 0 }, { doorOpen: 1, duration: doors.duration - 0.5, ease: "power2.inOut" }, doors.at);
-  tl.fromTo(t.hero, { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -24, duration: 0.8, ease: "power1.in" }, doors.at);
+  const doors = step("doors");
+  tl.fromTo(v, { doorOpen: 0 }, { doorOpen: 1, duration: doors.duration - 0.5, ease: "power2.inOut" }, doors.start);
+  tl.fromTo(t.hero, { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -24, duration: 0.8, ease: "power1.in" }, doors.start);
 
-  // Camera: one tween per waypoint segment, accelerating from rest and settling at the painting.
-  // Explicit from-values keep every segment deterministic however the page is entered or scrubbed.
-  // Only the first segment renders immediately; later ones must not overwrite the start pose at build time.
-  let firstSegment = true;
-  const camera = (from: string, to: string, phase: keyof typeof PHASES, ease = "none") => {
-    const { at, duration } = seg(phase);
+  // Camera: one tween per moving step, each from the previous waypoint to the next. Explicit
+  // from-values keep segments deterministic however the page is entered or scrubbed; only the
+  // first renders immediately so later segments cannot overwrite the start pose at build time.
+  let waypoint = 0;
+  for (const s of TIMELINE_PLAN) {
+    if (s.to === undefined) continue;
     tl.fromTo(
       v,
-      { cameraT: waypointIndex(from) },
-      { cameraT: waypointIndex(to), duration, ease, immediateRender: firstSegment },
-      at,
+      { cameraT: waypoint },
+      { cameraT: s.to, duration: s.duration, ease: s.ease ?? "none", immediateRender: waypoint === 0 },
+      s.start,
     );
-    firstSegment = false;
-  };
-  camera("entrance", "approach", "doors", "power1.in");
-  camera("approach", "threshold", "threshold");
-  camera("threshold", "corridor", "corridor");
-  camera("corridor", "painting", "turn", "power1.out");
-  camera("painting", "onward", "onward", "power1.inOut");
+    waypoint = s.to;
+  }
 
-  // Information panel appears as the camera settles and leaves before it turns away.
-  tl.fromTo(t.panel, { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: "power1.out" }, PHASES.turn.end - 0.35);
-  tl.to(t.panel, { autoAlpha: 0, y: -12, duration: 0.35, ease: "power1.in" }, PHASES.onward.start);
+  // Each painting's panel appears as the camera settles and leaves before it turns away.
+  for (const s of TIMELINE_PLAN) {
+    if (s.paintingIndex === undefined) continue;
+    const panel = t.panels[s.paintingIndex];
+    if (!panel) continue;
+    tl.fromTo(panel, { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: "power1.out" }, s.start - 0.35);
+    tl.to(panel, { autoAlpha: 0, y: -12, duration: 0.35, ease: "power1.in" }, s.end);
+  }
 
   return tl;
 }

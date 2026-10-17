@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import type { Painting } from "@/types/artwork";
 import { createMotionStore } from "@/lib/museum/motion";
+import { galleryLayout } from "@/lib/museum/galleryLayout";
 import { useCapabilities, usePrefersReducedMotion } from "@/lib/museum/clientEnvironment";
 import {
   CHAPTERS,
@@ -11,9 +11,9 @@ import {
   TIMELINE_LENGTH,
   chapterAt,
   createMuseumTimeline,
+  nextChapterAfter,
   scrollOffsetFor,
   type Chapter,
-  type ChapterId,
 } from "@/lib/museum/scrollTimeline";
 import { EntranceHero } from "./overlay/EntranceHero";
 import { PaintingInformation } from "./overlay/PaintingInformation";
@@ -31,18 +31,18 @@ const SLOW_LOAD_MS = 12000;
  * the 3D canvas and the HTML overlays. Falls back to a static entrance when
  * WebGL is unavailable or the scene fails.
  */
-export function MuseumExperience({ painting }: { painting: Painting }) {
+export function MuseumExperience() {
   const [store] = useState(createMotionStore);
   const capabilities = useCapabilities();
   const reducedMotion = usePrefersReducedMotion();
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [slow, setSlow] = useState(false);
-  const [chapter, setChapter] = useState<ChapterId>("entrance");
+  const [chapter, setChapter] = useState(CHAPTERS[0].id);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLElement>(null);
+  const panelRefs = useRef<(HTMLElement | null)[]>([]);
   const progressRef = useRef<HTMLSpanElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
 
@@ -50,18 +50,16 @@ export function MuseumExperience({ painting }: { painting: Painting }) {
 
   useEffect(() => {
     if (mode !== "3d") return;
-    const { track, hero, panel, progress } = {
-      track: trackRef.current,
-      hero: heroRef.current,
-      panel: panelRef.current,
-      progress: progressRef.current,
-    };
-    if (!track || !hero || !panel || !progress) return;
+    const track = trackRef.current;
+    const hero = heroRef.current;
+    const progress = progressRef.current;
+    const panels = galleryLayout.map((_, i) => panelRefs.current[i]);
+    if (!track || !hero || !progress || panels.some((p) => !p)) return;
     const tl = createMuseumTimeline({
       store,
       track,
       hero,
-      panel,
+      panels: panels as HTMLElement[],
       progress,
       reducedMotion,
       onTime: (time) => setChapter(chapterAt(time)),
@@ -90,7 +88,6 @@ export function MuseumExperience({ painting }: { painting: Painting }) {
     [reducedMotion],
   );
   const onSelectChapter = useCallback((c: Chapter) => goTo(c.time), [goTo]);
-  const onContinue = useCallback(() => goTo(CHAPTERS[CHAPTERS.length - 1].time), [goTo]);
   const onReady = useCallback(() => setReady(true), []);
   const onError = useCallback((error: Error) => {
     console.error("[ARVISTA] 3D scene unavailable:", error.message);
@@ -131,7 +128,21 @@ export function MuseumExperience({ painting }: { painting: Painting }) {
         )}
         <div className={styles.vignette} aria-hidden="true" />
         <EntranceHero ref={heroRef} />
-        <PaintingInformation ref={panelRef} painting={painting} onContinue={onContinue} />
+        {galleryLayout.map(({ painting }, i) => {
+          const next = nextChapterAfter(i);
+          return (
+            <PaintingInformation
+              key={painting.id}
+              ref={(el) => {
+                panelRefs.current[i] = el;
+              }}
+              painting={painting}
+              number={i + 1}
+              continueLabel={next.id === "next-hall" ? "Continue" : "Next painting"}
+              onContinue={() => goTo(next.time)}
+            />
+          );
+        })}
         <ChapterNav chapters={CHAPTERS} active={chapter} onSelect={onSelectChapter} progressRef={progressRef} />
         <a className={styles.collectionLink} href="#collection">
           View collection

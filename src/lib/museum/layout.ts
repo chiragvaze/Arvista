@@ -1,4 +1,4 @@
-import type { GalleryWall } from "@/types/artwork";
+import { paintings } from "@/content/paintings";
 
 /**
  * Architectural dimensions of the museum, in metres.
@@ -40,20 +40,29 @@ export const DOORWAY = {
   maxOpenAngle: (95 * Math.PI) / 180,
 } as const;
 
+/** Bays: an entry bay, one bay per painting, a bay with a bench, and a final bay before the end wall. */
+export function corridorBayCount(paintingCount: number): number {
+  return Math.max(paintingCount, 1) + 3;
+}
+
+const BAY_COUNT = corridorBayCount(paintings.length);
+const FIRST_BAY_Z = -2;
+const BAY_LENGTH = 7;
+
 export const CORRIDOR = {
   halfWidth: 5,
   wallHeight: 6.5,
   startZ: -INNER_FACADE.thickness,
-  endZ: -46,
-  /** Pilasters and vault ribs divide the corridor into bays. */
-  firstBayZ: -2,
-  bayLength: 7,
-  bayCount: 6,
+  /** Pilasters and vault ribs divide the corridor into bays; the corridor grows with the collection. */
+  firstBayZ: FIRST_BAY_Z,
+  bayLength: BAY_LENGTH,
+  bayCount: BAY_COUNT,
+  endZ: FIRST_BAY_Z - BAY_LENGTH * BAY_COUNT - 2,
 } as const;
 
 export const VAULT_RADIUS = CORRIDOR.halfWidth;
 
-/** Centre z of a corridor bay (0-based). Paintings hang at bay centres. */
+/** Centre z of a corridor bay (0-based). Painting n hangs in bay n. */
 export function bayCenterZ(bayIndex: number): number {
   return CORRIDOR.firstBayZ - CORRIDOR.bayLength * (bayIndex + 0.5);
 }
@@ -63,23 +72,8 @@ export function bayDividerZs(): number[] {
   return Array.from({ length: CORRIDOR.bayCount + 1 }, (_, i) => CORRIDOR.firstBayZ - CORRIDOR.bayLength * i);
 }
 
+/** Bay holding the bench, just past the last painting. */
+export const BENCH_BAY = CORRIDOR.bayCount - 2;
+
+/** Height of every frame's centre above the floor. */
 export const PAINTING_CENTER_HEIGHT = 2.4;
-
-export interface WallPlacement {
-  position: [number, number, number];
-  /** Rotation about Y so the painting faces into the corridor. */
-  rotationY: number;
-}
-
-/**
- * Where a painting hangs. Paintings alternate walls by order; order 1 uses bay 1
- * so the visitor has walked a little way into the corridor before the first work.
- */
-export function paintingPlacement(order: number, wall: GalleryWall): WallPlacement {
-  const z = bayCenterZ(order);
-  const x = wall === "left" ? -CORRIDOR.halfWidth : CORRIDOR.halfWidth;
-  return {
-    position: [x, PAINTING_CENTER_HEIGHT, z],
-    rotationY: wall === "left" ? Math.PI / 2 : -Math.PI / 2,
-  };
-}

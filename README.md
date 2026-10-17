@@ -12,18 +12,20 @@ npm run dev        # http://localhost:3000
 npm run lint
 npm run typecheck
 npm run build
+npm run artworks   # regenerate display images after adding or replacing a photograph
 ```
 
-## Adding your paintings
+## Paintings
 
-Paintings live in [`src/content/paintings.ts`](src/content/paintings.ts). Put the image in `public/artworks/` and edit the entry:
+Paintings are defined in [`src/content/paintings.ts`](src/content/paintings.ts) and hang in `order`, alternating left and right walls unless `wall` is set. The gallery layout, camera route, scroll timeline, chapter navigation and information panels are all generated from that list, and the corridor grows a bay per painting.
 
-- `image.src`, `image.width`, `image.height`, `image.alt`: the frame is built around the image's real aspect ratio.
-- `title`, `year`, `medium`, `dimensions`, `description`: shown in the information panel and the collection section.
-- `wall` (`"left"` / `"right"`) and `order`: where it hangs. Order *n* hangs in corridor bay *n*.
-- `displayHeight`: height of the painted surface in metres.
+To add a painting:
 
-Remove `isPlaceholder` once the entry describes a real painting.
+1. Put the original photograph in `public/artworks/paintings/<id>.jpeg` (it is never modified).
+2. Run `npm run artworks`. This writes resized WebP display copies to `public/artworks/display/` (2048 px and 1024 px) and their sizes to `src/content/artwork-images.generated.json`. Images are only resized and converted to sRGB: no cropping or colour changes.
+3. Add an entry to `paintings.ts` with the same `id`: title, medium, `creationDate` (YYYY-MM-DD), `dimensions` as written, `physicalSize` in cm, description and order.
+
+Physical size sets each painting's size relative to the others; frames are matted toward a common outer size, so a smaller canvas gets a wider mat rather than being enlarged.
 
 ## Structure
 
@@ -31,11 +33,13 @@ Remove `isPlaceholder` once the entry describes a real painting.
 src/
   app/                      layout, page, global styles
   content/paintings.ts      artwork data
+  content/artwork-images.generated.json  display image paths and sizes (npm run artworks)
   types/artwork.ts          Painting type
   lib/museum/
-    layout.ts               architectural dimensions and painting placement
-    cameraWaypoints.ts      camera poses and the spline/slerp camera rig
-    scrollTimeline.ts       scroll phases, chapters and the GSAP timeline
+    layout.ts               architectural dimensions; corridor length from painting count
+    galleryLayout.ts        wall, bay, position and frame/mat size for every painting
+    cameraWaypoints.ts      camera route generated from the layout; spline/slerp camera rig
+    scrollTimeline.ts       timeline plan, chapters and the GSAP timeline built from the route
     motion.ts               shared animation values (scroll → scene)
     geometry.ts, textures.ts  arch/frame builders, procedural surfaces
     deviceTier.ts, clientEnvironment.ts  WebGL, quality tier, reduced motion

@@ -4,12 +4,14 @@ import { PlaneGeometry } from "three";
 import { MeshReflectorMaterial } from "@react-three/drei";
 import type { QualityTier } from "@/lib/museum/deviceTier";
 import { scaleUVs } from "@/lib/museum/geometry";
+import { CORRIDOR } from "@/lib/museum/layout";
 import { useMuseumMaterials } from "./materials";
 import { useDisposable } from "./helpers";
 
 const WIDTH = 34;
 const NEAR_Z = 30;
-const FAR_Z = -58;
+/** Runs past the end wall and under the next hall. */
+const FAR_Z = CORRIDOR.endZ - 12;
 /** One texture repeat holds 2 x 2 marble slabs of 1.5 m. */
 const METRES_PER_REPEAT = 3;
 

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { Painting } from "@/types/artwork";
+import { formatCreationDate } from "@/content/paintings";
 import styles from "./ArtworkDetails.module.css";
 
 /**
@@ -16,8 +17,14 @@ export function ArtworkDetails({ paintings }: { paintings: Painting[] }) {
           The Collection
         </h2>
       </header>
-      {paintings.map((painting) => (
-        <article key={painting.id} id={`artwork-${painting.id}`} className={styles.artwork} aria-labelledby={`title-${painting.id}`}>
+      {paintings.map((painting, i) => (
+        <article
+          key={painting.id}
+          id={`artwork-${painting.id}`}
+          className={styles.artwork}
+          data-reverse={i % 2 === 1 || undefined}
+          aria-labelledby={`title-${painting.id}`}
+        >
           <figure className={styles.figure}>
             <div className={styles.frame}>
               <Image
@@ -27,7 +34,6 @@ export function ArtworkDetails({ paintings }: { paintings: Painting[] }) {
                 height={painting.image.height}
                 sizes="(max-width: 800px) 90vw, 40vw"
                 className={styles.image}
-                unoptimized={painting.image.src.endsWith(".svg")}
               />
             </div>
           </figure>
@@ -38,17 +44,20 @@ export function ArtworkDetails({ paintings }: { paintings: Painting[] }) {
             <h3 id={`title-${painting.id}`} className={styles.artworkTitle}>
               {painting.title}
             </h3>
+            {painting.description && <p className={styles.description}>{painting.description}</p>}
             <dl className={styles.facts}>
-              {painting.year && (
-                <div>
-                  <dt>Year</dt>
-                  <dd>{painting.year}</dd>
-                </div>
-              )}
               {painting.medium && (
                 <div>
                   <dt>Medium</dt>
                   <dd>{painting.medium}</dd>
+                </div>
+              )}
+              {painting.creationDate && (
+                <div>
+                  <dt>Created</dt>
+                  <dd>
+                    <time dateTime={painting.creationDate}>{formatCreationDate(painting.creationDate)}</time>
+                  </dd>
                 </div>
               )}
               {painting.dimensions && (
@@ -58,7 +67,6 @@ export function ArtworkDetails({ paintings }: { paintings: Painting[] }) {
                 </div>
               )}
             </dl>
-            {painting.description && <p className={styles.description}>{painting.description}</p>}
             <a className={styles.back} href="#top">
               Return to the entrance
             </a>

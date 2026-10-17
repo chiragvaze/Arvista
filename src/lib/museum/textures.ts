@@ -221,3 +221,32 @@ export function getFrondTexture(): CanvasTexture {
   frondCache.anisotropy = 4;
   return frondCache;
 }
+
+/**
+ * Stand-in canvas shown when a painting's image fails to load: plain primed
+ * canvas with a clear "image unavailable" label, so it is never mistaken for art.
+ */
+export function createUnavailableTexture(title: string, aspect: number): CanvasTexture {
+  const height = 1024;
+  const width = Math.round(height * aspect);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("2D canvas is unavailable");
+  ctx.fillStyle = "#e6dfd2";
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "rgba(90,70,50,0.35)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(width * 0.08, height * 0.08, width * 0.84, height * 0.84);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#5c4a38";
+  ctx.font = `500 ${Math.round(width * 0.075)}px Georgia, "Times New Roman", serif`;
+  ctx.fillText(title, width / 2, height * 0.47, width * 0.76);
+  ctx.fillStyle = "#857260";
+  ctx.font = `${Math.round(width * 0.045)}px Arial, Helvetica, sans-serif`;
+  ctx.fillText("Image unavailable", width / 2, height * 0.55, width * 0.76);
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}

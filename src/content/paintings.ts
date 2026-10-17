@@ -1,31 +1,96 @@
-import type { Painting } from "@/types/artwork";
+import type { ArtworkImage, Painting } from "@/types/artwork";
+import generatedImages from "./artwork-images.generated.json";
+
+type GeneratedImage = Omit<ArtworkImage, "alt">;
+const images: Record<string, GeneratedImage> = generatedImages;
 
 /**
- * Paintings shown in the gallery, in hanging order.
- *
- * To show your own work, drop the image into /public/artworks and replace the
- * placeholder entry below. The 3D frame reads the image's real aspect ratio,
- * so portrait and landscape works are both framed without stretching.
+ * Display image for a painting, produced by `npm run artworks` from the
+ * photograph in public/artworks/paintings/<id>.jpeg. Fails loudly if the photo
+ * has not been processed, rather than showing the wrong image.
+ */
+function displayImage(id: string, alt: string): ArtworkImage {
+  const image = images[id];
+  if (!image) {
+    throw new Error(
+      `No display image for "${id}". Add public/artworks/paintings/${id}.jpeg and run \`npm run artworks\`.`,
+    );
+  }
+  return { ...image, alt };
+}
+
+/**
+ * Paintings in the gallery. Order sets the hanging sequence along the corridor;
+ * walls alternate left/right unless `wall` is given.
  */
 export const paintings: Painting[] = [
   {
-    id: "placeholder-01",
-    title: "Placeholder Artwork",
-    image: {
-      src: "/artworks/placeholder-01.svg",
-      width: 1200,
-      height: 1500,
-      alt: "Temporary placeholder: an abstract dusk landscape of layered ochre hills under a pale sky, labelled as placeholder artwork.",
-    },
-    medium: "Example: oil on canvas",
-    dimensions: "Example: 60 × 75 cm",
+    id: "the-silent-ruler",
+    title: "The Silent Ruler",
+    image: displayImage(
+      "the-silent-ruler",
+      "Painting of a bald eagle in profile, its white head and amber eye turned to the right, against a sweeping purple and blue background.",
+    ),
+    medium: "Acrylic on canvas",
+    creationDate: "2025-12-29",
+    dimensions: "8 × 10 inches (20 × 25 cm)",
+    physicalSize: { widthCm: 20, heightCm: 25 },
     description:
-      "This is a temporary placeholder, not a real painting. Replace the image and these details in src/content/paintings.ts with your own artwork, its title, year, medium, dimensions and the story behind it.",
+      "Where silence becomes power, and the eye becomes law.\nThis painting captures authority that does not demand attention, yet cannot be ignored.",
     wall: "left",
     order: 1,
-    displayHeight: 2.0,
-    isPlaceholder: true,
+  },
+  {
+    id: "breath-of-the-arctic",
+    title: "Breath of the Arctic",
+    image: displayImage(
+      "breath-of-the-arctic",
+      "Painting of a polar bear walking straight toward the viewer across snow and ice, with mountains and green and violet northern lights behind.",
+    ),
+    medium: "Acrylic on canvas",
+    creationDate: "2026-02-10",
+    dimensions: "12 × 16 inches (30 × 40 cm)",
+    physicalSize: { widthCm: 30, heightCm: 40 },
+    description: "In the silence of ice, life still breathes.",
+    wall: "right",
+    order: 2,
+  },
+  {
+    id: "the-weight-of-silence",
+    title: "The Weight of Silence",
+    image: displayImage(
+      "the-weight-of-silence",
+      "Painting of a cheetah's head and shoulders, gazing to the left against a soft orange and grey background.",
+    ),
+    medium: "Acrylic on canvas",
+    creationDate: "2026-04-02",
+    dimensions: "12 × 16 inches (30 × 40 cm)",
+    physicalSize: { widthCm: 30, heightCm: 40 },
+    description:
+      "Not all power makes a sound.\nIn the stillness, there is focus.\nIn the quiet, there is control.\nThis moment isn't empty—it's waiting.",
+    wall: "left",
+    order: 3,
   },
 ];
 
-export const featuredPainting: Painting = paintings[0];
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/** "2025-12-29" → "29 December 2025". Parsed by hand so server and client always agree (no time zones). */
+export function formatCreationDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return isoDate;
+  return `${day} ${MONTHS[month - 1]} ${year}`;
+}

@@ -1,33 +1,30 @@
 "use client";
 
 import { Suspense } from "react";
-import type { Painting } from "@/types/artwork";
 import type { QualityTier } from "@/lib/museum/deviceTier";
-import { paintingPlacement } from "@/lib/museum/layout";
+import type { PaintingLayout } from "@/lib/museum/galleryLayout";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { AimedSpotLight } from "./helpers";
 import { PaintingFrame } from "./PaintingFrame";
-import { PaintingArtwork, useArtworkTexture } from "./PaintingArtwork";
-
-const DEFAULT_DISPLAY_HEIGHT = 1.8;
+import { PaintingArtwork, UnavailableArtwork, useArtworkTexture } from "./PaintingArtwork";
 
 /**
- * A painting hung on the corridor wall at the position its hanging order
- * dictates, with its own picture light. If the image is still loading or fails,
- * the frame still hangs with blank canvas so the scene never goes empty.
+ * One painting, hung where the gallery layout places it, with its own picture
+ * light. The frame never depends on the image: while the image loads the frame
+ * holds bare canvas, and if it fails a labelled stand-in appears, so one
+ * missing file never breaks the rest of the gallery.
  */
-export function GalleryPainting({ painting, quality }: { painting: Painting; quality: QualityTier }) {
-  const { position, rotationY } = paintingPlacement(painting.order, painting.wall);
-  const height = painting.displayHeight ?? DEFAULT_DISPLAY_HEIGHT;
-  const declaredAspect = painting.image.width / painting.image.height;
+export function GalleryPainting({ layout, quality }: { layout: PaintingLayout; quality: QualityTier }) {
+  const { painting, position, rotationY, frame } = layout;
+  const src = quality === "low" && painting.image.srcSmall ? painting.image.srcSmall : painting.image.src;
   const shadows = quality === "high";
-  const blank = <FramedArtwork height={height} aspect={declaredAspect} castShadow={shadows} />;
 
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      <ErrorBoundary fallback={blank}>
-        <Suspense fallback={blank}>
-          <LoadedArtwork src={painting.image.src} height={height} castShadow={shadows} />
+      <PaintingFrame frame={frame} castShadow={shadows} />
+      <ErrorBoundary fallback={<UnavailableArtwork width={frame.artWidth} height={frame.artHeight} title={painting.title} />}>
+        <Suspense fallback={<PaintingArtwork width={frame.artWidth} height={frame.artHeight} texture={null} />}>
+          <LoadedArtwork src={src} width={frame.artWidth} height={frame.artHeight} />
         </Suspense>
       </ErrorBoundary>
       <PictureLight castShadow={shadows} />
@@ -35,29 +32,9 @@ export function GalleryPainting({ painting, quality }: { painting: Painting; qua
   );
 }
 
-function LoadedArtwork({ src, height, castShadow }: { src: string; height: number; castShadow: boolean }) {
-  const { texture, aspect } = useArtworkTexture(src);
-  return <FramedArtwork height={height} aspect={aspect} castShadow={castShadow} texture={texture} />;
-}
-
-function FramedArtwork({
-  height,
-  aspect,
-  castShadow,
-  texture = null,
-}: {
-  height: number;
-  aspect: number;
-  castShadow: boolean;
-  texture?: Parameters<typeof PaintingArtwork>[0]["texture"];
-}) {
-  const width = height * aspect;
-  return (
-    <>
-      <PaintingFrame width={width} height={height} castShadow={castShadow} />
-      <PaintingArtwork width={width} height={height} texture={texture} />
-    </>
-  );
+function LoadedArtwork({ src, width, height }: { src: string; width: number; height: number }) {
+  const texture = useArtworkTexture(src);
+  return <PaintingArtwork width={width} height={height} texture={texture} />;
 }
 
 /** A ceiling-mounted spotlight aimed at the painting, in the painting's local space (+Z is into the corridor). */
@@ -67,9 +44,9 @@ function PictureLight({ castShadow }: { castShadow: boolean }) {
       aim={[0, -0.1, 0]}
       position={[0, 4.1, 3.1]}
       color="#fff0d8"
-      intensity={95}
+      intensity={85}
       angle={0.42}
-      penumbra={0.7}
+      penumbra={0.75}
       distance={12}
       decay={2}
       castShadow={castShadow}

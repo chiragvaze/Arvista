@@ -19,7 +19,9 @@ export interface MuseumMaterials {
   lanternGlass: MeshStandardMaterial;
   skylight: MeshBasicMaterial;
   frameGold: MeshStandardMaterial;
-  frameLiner: MeshStandardMaterial;
+  frameWood: MeshStandardMaterial;
+  mat: MeshStandardMaterial;
+  matCore: MeshStandardMaterial;
   ceramic: MeshStandardMaterial;
   frond: MeshStandardMaterial;
   leather: MeshStandardMaterial;
@@ -72,8 +74,12 @@ function createMaterials(): MuseumMaterials {
     }),
     // Skylight panels sit on the inside of the vault cylinder, so their visible face is the back face.
     skylight: new MeshBasicMaterial({ color: "#fff4e0", side: BackSide }),
-    frameGold: new MeshStandardMaterial({ color: "#c0904a", metalness: 1, roughness: 0.3 }),
-    frameLiner: new MeshStandardMaterial({ color: "#ebe2d0", roughness: 0.95 }),
+    frameGold: new MeshStandardMaterial({ color: "#c0904a", metalness: 1, roughness: 0.32 }),
+    // Dark walnut moulding: the shared wood grain, deepened and given a satin finish.
+    frameWood: new MeshStandardMaterial({ color: "#5a4636", map: woodMap, roughness: 0.38 }),
+    // Warm ivory museum mat and the paler bevelled core at its window.
+    mat: new MeshStandardMaterial({ color: "#ece4d4", roughness: 0.96 }),
+    matCore: new MeshStandardMaterial({ color: "#f8f3ea", roughness: 0.9 }),
     ceramic: new MeshStandardMaterial({ color: "#2c2622", roughness: 0.38 }),
     frond: new MeshStandardMaterial({
       map: getFrondTexture(),

@@ -1,0 +1,23 @@
+{
+  "breath-of-the-arctic": {
+    "original": "/artworks/paintings/breath-of-the-arctic.jpeg",
+    "src": "/artworks/display/breath-of-the-arctic-2048.webp",
+    "width": 1105,
+    "height": 1494,
+    "srcSmall": "/artworks/display/breath-of-the-arctic-1024.webp"
+  },
+  "the-silent-ruler": {
+    "original": "/artworks/paintings/the-silent-ruler.jpeg",
+    "src": "/artworks/display/the-silent-ruler-2048.webp",
+    "width": 1542,
+    "height": 2048,
+    "srcSmall": "/artworks/display/the-silent-ruler-1024.webp"
+  },
+  "the-weight-of-silence": {
+    "original": "/artworks/paintings/the-weight-of-silence.jpeg",
+    "src": "/artworks/display/the-weight-of-silence-2048.webp",
+    "width": 1542,
+    "height": 2048,
+    "srcSmall": "/artworks/display/the-weight-of-silence-1024.webp"
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Environment, Lightformer } from "@react-three/drei";
-import { paintings } from "@/content/paintings";
+import { galleryLayout } from "@/lib/museum/galleryLayout";
 import type { QualityTier } from "@/lib/museum/deviceTier";
 import type { MotionStore } from "@/lib/museum/motion";
 import { PORTICO } from "@/lib/museum/layout";
@@ -55,8 +55,8 @@ export function MuseumScene({ store, quality }: { store: MotionStore; quality: Q
       <Entrance quality={quality} />
       <DoubleDoors store={store} />
       <GalleryCorridor quality={quality} />
-      {paintings.map((painting) => (
-        <GalleryPainting key={painting.id} painting={painting} quality={quality} />
+      {galleryLayout.map((layout) => (
+        <GalleryPainting key={layout.painting.id} layout={layout} quality={quality} />
       ))}
     </MaterialsProvider>
   );
