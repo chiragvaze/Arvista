@@ -46,7 +46,7 @@ src/
     geometry.ts, textures.ts  arch/frame builders, procedural surfaces
     lightmaps.ts            baked light and contact shadows (canvas light/AO maps) for walls, vault, facades and floor
     deviceTier.ts, clientEnvironment.ts  WebGL, quality tier, reduced motion
-  components/museum/        3D scene (canvas, entrance, doors, corridor, planters, floor inlay, painting, camera)
+  components/museum/        3D scene (canvas, entrance, doors, corridor, planters, floor inlay, painting, camera, reflection probe)
   components/museum/overlay HTML overlays (attribution, painting labels, closing card, chapter nav, loader)
   components/gallery/       static, accessible collection and the closing artist section
 ```

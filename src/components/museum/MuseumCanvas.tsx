@@ -45,7 +45,7 @@ function MuseumCanvas({ store, quality, onReady, onError }: MuseumCanvasProps) {
         camera={{ fov: 42, near: 0.15, far: 140, position: [start[0], start[1], start[2]] }}
         onCreated={({ gl }) => {
           gl.toneMapping = ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.05;
+          gl.toneMappingExposure = 1.1;
           // Every shadow caster is static except the doors, which request an update when they move
           // (see DoubleDoors). This avoids re-rendering four shadow maps on every frame of the walk.
           gl.shadowMap.autoUpdate = false;
@@ -100,6 +100,11 @@ function ShaderWarmup({ onCompiled }: { onCompiled: () => void }) {
 /** Fires once the scene has mounted and two frames have been drawn. */
 function ReadySignal({ onReady }: { onReady: () => void }) {
   const invalidate = useThree((s) => s.invalidate);
+  // TEMP-QA: expose the renderer for measurements; remove before handing over.
+  const getState = useThree((s) => s.get);
+  useEffect(() => {
+    (window as unknown as { __three: unknown }).__three = getState();
+  }, [getState]);
   useEffect(() => {
     let second = 0;
     invalidate();

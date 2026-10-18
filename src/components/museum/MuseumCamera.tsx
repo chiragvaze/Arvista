@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PerspectiveCamera } from "three";
 import { BASE_FOV, CameraRig, cameraWaypoints } from "@/lib/museum/cameraWaypoints";
+import { DETAIL_LAYER } from "./helpers";
 import type { MotionStore } from "@/lib/museum/motion";
 
 /** Viewports narrower than this use the portrait framing of each waypoint. */
@@ -37,6 +38,8 @@ export function MuseumCamera({ store }: { store: MotionStore }) {
       camera.far = 140;
       camera.updateProjectionMatrix();
     }
+    // The visitor sees the details the floor reflection leaves out.
+    camera.layers.enable(DETAIL_LAYER);
     invalidate();
   }, [aspect, get]);
 

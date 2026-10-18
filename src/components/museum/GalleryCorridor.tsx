@@ -13,11 +13,11 @@ import {
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { BENCH_BAY, CORRIDOR, PLANTER_SPOTS, VAULT_RADIUS, bayCenterZ, bayDividerZs } from "@/lib/museum/layout";
-import { archBandGeometry, archedWallGeometry, metricBox, scaleUVs } from "@/lib/museum/geometry";
+import { archBandGeometry, archedWallGeometry, bevelledBox, metricBox, scaleUVs } from "@/lib/museum/geometry";
 import { bakeCorridorWall, bakeEndWall, bakeVault, bakeVaultRelief, fitToMetres, CORRIDOR_LENGTH } from "@/lib/museum/lightmaps";
 import { createNicheTextures } from "@/lib/museum/textures";
 import { bakedStoneMaterial, useMuseumMaterials } from "./materials";
-import { InstancedParts, useDisposable, type InstanceTransform } from "./helpers";
+import { BevelledBox, InstancedParts, useDisposable, type InstanceTransform } from "./helpers";
 import { Planter } from "./Planter";
 import { FloorInlay, type InlayStrip } from "./FloorInlay";
 
@@ -86,6 +86,14 @@ const PANEL = {
   upper: { bottom: 4.5, top: H - 0.66 },
 } as const;
 const PANEL_LENGTH = CORRIDOR.bayLength - 0.62 - PANEL.inset * 2;
+const WALL_PANELS = {
+  length: PANEL_LENGTH,
+  band: PANEL.band,
+  spans: [
+    [PANEL.lower.bottom, PANEL.lower.top],
+    [PANEL.upper.bottom, PANEL.upper.top],
+  ],
+} as const;
 const panelX = (side: number, depth: number) => side * (W - depth / 2);
 function panelRails(depth: number): InstanceTransform[] {
   return BAYS.flatMap((z) =>
@@ -170,7 +178,7 @@ export function GalleryCorridor() {
     return scaleUVs(g, Math.PI * VAULT_RADIUS, LENGTH);
   });
   const rib = useDisposable(() =>
-    archBandGeometry({ innerHalfWidth: VAULT_RADIUS - 0.36, spring: H, band: 0.4, depth: 0.5, baseY: H }),
+    archBandGeometry({ innerHalfWidth: VAULT_RADIUS - 0.36, spring: H, band: 0.4, depth: 0.46, baseY: H, bevel: 0.02 }),
   );
   const skylight = useDisposable(() => {
     const g = new CylinderGeometry(
@@ -188,22 +196,25 @@ export function GalleryCorridor() {
   });
   const pieces = useDisposable(() => {
     const lowerStile = (width: number) => PANEL.lower.top - PANEL.lower.bottom - width;
+    // Stone pieces have softly rounded edges that catch the light (see bevelledBox); the polished
+    // dark-marble plinths and baseboard keep crisp arrises and metric UVs.
     const geometries = {
-      pilaster: new BoxGeometry(0.22, H, 0.62),
-      capital: new BoxGeometry(0.34, 0.32, 0.82),
-      abacus: new BoxGeometry(0.4, 0.1, 0.94),
+      pilaster: bevelledBox(0.22, H, 0.62, 0.025),
+      capital: bevelledBox(0.34, 0.32, 0.82, 0.03),
+      abacus: bevelledBox(0.4, 0.1, 0.94, 0.02),
       plinth: metricBox(0.36, 0.46, 0.88),
-      base: new BoxGeometry(0.32, 0.16, 0.8),
-      baseTop: new BoxGeometry(0.28, 0.08, 0.72),
-      bandRail: new BoxGeometry(PANEL.bandDepth, PANEL.band, PANEL_LENGTH),
-      beadRail: new BoxGeometry(PANEL.beadDepth, PANEL.bead, PANEL_LENGTH - PANEL.band + PANEL.bead),
-      bandStile: new BoxGeometry(PANEL.bandDepth, lowerStile(PANEL.band), PANEL.band),
-      beadStile: new BoxGeometry(PANEL.beadDepth, lowerStile(PANEL.bead), PANEL.bead),
+      base: bevelledBox(0.32, 0.16, 0.8, 0.04),
+      baseTop: bevelledBox(0.28, 0.08, 0.72, 0.03),
+      bandRail: bevelledBox(PANEL.bandDepth, PANEL.band, PANEL_LENGTH, 0.008),
+      beadRail: bevelledBox(PANEL.beadDepth, PANEL.bead, PANEL_LENGTH - PANEL.band + PANEL.bead, 0.016),
+      bandStile: bevelledBox(PANEL.bandDepth, lowerStile(PANEL.band), PANEL.band, 0.008),
+      beadStile: bevelledBox(PANEL.beadDepth, lowerStile(PANEL.bead), PANEL.bead, 0.016),
+      // Hundreds of dentils, each too small for rounding to show: plain boxes keep the triangle count down.
       dentil: new BoxGeometry(0.14, 0.1, 0.085),
       baseboard: metricBox(BASEBOARD.depth, BASEBOARD.height, LENGTH),
-      baseboardCap: new BoxGeometry(BASEBOARD.depth + 0.035, BASEBOARD.cap, LENGTH),
-      fascia: new BoxGeometry(0.14, 0.42, LENGTH),
-      crown: new BoxGeometry(0.42, 0.2, LENGTH),
+      baseboardCap: bevelledBox(BASEBOARD.depth + 0.035, BASEBOARD.cap, LENGTH, 0.015),
+      fascia: bevelledBox(0.14, 0.42, LENGTH, 0.02),
+      crown: bevelledBox(0.42, 0.2, LENGTH, 0.03),
     };
     return { ...geometries, dispose: () => Object.values(geometries).forEach((g) => g.dispose()) };
   });
@@ -257,8 +268,8 @@ export function GalleryCorridor() {
   // Lit surfaces with baked light: both walls, the vault (cove light and skylight glow) and the end wall's
   // face; plus the frames around the skylights and the lunette glazing.
   const surfaces = useDisposable(() => {
-    const left = bakedStoneMaterial(m.plaster, bakeCorridorWall(-1), { width: LENGTH, height: H }, 2.0);
-    const right = bakedStoneMaterial(m.plaster, bakeCorridorWall(1), { width: LENGTH, height: H }, 2.0);
+    const left = bakedStoneMaterial(m.plaster, bakeCorridorWall(-1, WALL_PANELS), { width: LENGTH, height: H }, 2.0);
+    const right = bakedStoneMaterial(m.plaster, bakeCorridorWall(1, WALL_PANELS), { width: LENGTH, height: H }, 2.0);
     const vaultBase = new MeshStandardMaterial({ color: "#f3eadc", map: m.plaster.map, roughness: 0.92, side: BackSide });
     const trim = vaultBase.clone();
     trim.color.set("#f8f2e6");
@@ -284,8 +295,8 @@ export function GalleryCorridor() {
   // Two lights along the corridor give the pilasters, cornice and mouldings their modelling (the walls' and
   // vault's soft light is baked); each painting also has its own picture light. Kept deliberately few: every
   // light adds to the cost of every lit pixel and to shader compile time.
-  const lightCount = 2;
-  const lightZs = Array.from({ length: lightCount }, (_, i) => CORRIDOR.startZ + (CORRIDOR.endZ - CORRIDOR.startZ) * ((i + 0.5) / lightCount));
+  // One over the first paintings, one over the last bay, which also reaches the final archway and the urn in the apse.
+  const lightZs = [CORRIDOR.startZ - 10, CORRIDOR.endZ + 5];
 
   return (
     <group>
@@ -336,7 +347,7 @@ export function GalleryCorridor() {
       {lightZs.map((z) => (
         // Hung high in the vault: the light grazes the walls from above, so it models the pilasters, cornice and
         // mouldings and falls off down the wall, rather than flooding the wall faces evenly.
-        <pointLight key={z} position={[0, H + 0.8, z]} color="#ffe6c4" intensity={30} distance={30} decay={2} />
+        <pointLight key={z} position={[0, H + 0.8, z]} color="#ffe6c4" intensity={24} distance={30} decay={2} />
       ))}
 
       {/* Palms in the entry bay and the last bay, clear of the paintings. */}
@@ -353,22 +364,22 @@ export function GalleryCorridor() {
       <mesh geometry={endArch.reveal} material={m.stone} position={[0, 0, hallZ - 0.01]} />
       {/* Keystone, rising to meet the cornice */}
       <mesh material={m.stone} position={[0, ARCH.spring + ARCH.halfWidth + 0.3, CORRIDOR.endZ + 0.13]}>
-        <boxGeometry args={[0.5, 0.82, 0.28]} />
+        <BevelledBox args={[0.5, 0.82, 0.28]} radius={0.03} />
       </mesh>
       {/* The cornice across the end wall butts against the side walls' cornices rather than overlapping them,
           so no two faces share a plane in the corners. */}
       <mesh material={m.stone} position={[0, H - 0.25, CORRIDOR.endZ + 0.07]}>
-        <boxGeometry args={[W * 2 - 0.28, 0.42, 0.14]} />
+        <BevelledBox args={[W * 2 - 0.28, 0.42, 0.14]} radius={0.02} />
       </mesh>
       <mesh material={m.stone} position={[0, H + 0.06, CORRIDOR.endZ + 0.21]}>
-        <boxGeometry args={[W * 2 - 0.84, 0.2, 0.42]} />
+        <BevelledBox args={[W * 2 - 0.84, 0.2, 0.42]} radius={0.03} />
       </mesh>
       <mesh geometry={endArch.lunetteBand} material={m.stone} position={[0, 0, CORRIDOR.endZ]} />
       <mesh geometry={endArch.lunette} material={surfaces.lunette} position={[0, LUNETTE.y, CORRIDOR.endZ + 0.01]} />
       {[-1, 1].map((side) => (
         <group key={side}>
           <mesh material={m.stone} position={[side * (ARCH.halfWidth + 0.21), ARCH.spring - 0.1, CORRIDOR.endZ + 0.11]}>
-            <boxGeometry args={[0.62, 0.2, 0.26]} />
+            <BevelledBox args={[0.62, 0.2, 0.26]} radius={0.025} />
           </mesh>
           <mesh material={m.darkStone} position={[side * (ARCH.halfWidth + 0.21), 0.26, CORRIDOR.endZ + 0.1]}>
             <boxGeometry args={[0.58, 0.52, 0.22]} />
@@ -384,7 +395,7 @@ export function GalleryCorridor() {
             material={m.stone}
             position={[(side * (END_BASEBOARD.from + END_BASEBOARD.to)) / 2, BASEBOARD.height + BASEBOARD.cap / 2, CORRIDOR.endZ + 0.05]}
           >
-            <boxGeometry args={[END_BASEBOARD.to - END_BASEBOARD.from, BASEBOARD.cap, 0.1]} />
+            <BevelledBox args={[END_BASEBOARD.to - END_BASEBOARD.from, BASEBOARD.cap, 0.1]} radius={0.015} />
           </mesh>
         </group>
       ))}
@@ -402,8 +413,8 @@ function Bench({ position }: { position: [number, number, number] }) {
   const parts = useDisposable(() => {
     const cushion = new RoundedBoxGeometry(0.96, 0.3, 2.5, 4, 0.09);
     const button = new SphereGeometry(0.02, 8, 6);
-    const base = new BoxGeometry(0.88, 0.08, 2.4);
-    const leg = new BoxGeometry(0.09, 0.26, 0.09);
+    const base = bevelledBox(0.88, 0.08, 2.4, 0.02);
+    const leg = bevelledBox(0.09, 0.26, 0.09, 0.015);
     const all = [cushion, button, base, leg];
     return { cushion, button, base, leg, dispose: () => all.forEach((g) => g.dispose()) };
   });

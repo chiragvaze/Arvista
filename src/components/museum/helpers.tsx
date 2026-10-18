@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from "react";
-import { Euler, InstancedMesh, Matrix4, Object3D, Quaternion, Vector3, type BufferGeometry, type Material } from "three";
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { Euler, InstancedMesh, Matrix4, Object3D, Quaternion, Vector3, type BufferGeometry, type Group, type Light, type Material } from "three";
+import { bevelledBox } from "@/lib/museum/geometry";
 
 /**
  * Creates a three.js resource once per component instance and frees its GPU
@@ -21,6 +22,31 @@ export interface InstanceTransform {
 }
 
 /**
+ * Render layer for small or floor-level details that the marble floor's
+ * reflection leaves out. The visitor's camera renders this layer as well; only
+ * the reflection camera (layer 0) skips it, which saves draw calls in a pass
+ * that runs every frame without any visible difference in the blurred
+ * reflection.
+ */
+export const DETAIL_LAYER = 1;
+
+/**
+ * Puts everything inside on the detail layer. Lights are left alone: three
+ * only uses the lights a camera can see, so a light on another layer would
+ * light the reflection differently and force every shader to compile twice.
+ */
+export function NotReflected({ children }: { children: ReactNode }) {
+  const ref = useRef<Group>(null);
+  // No dependency list: children that mount later (e.g. after Suspense) are moved too.
+  useLayoutEffect(() => {
+    ref.current?.traverse((object) => {
+      if (!(object as Light).isLight) object.layers.set(DETAIL_LAYER);
+    });
+  });
+  return <group ref={ref}>{children}</group>;
+}
+
+/**
  * Draws one geometry many times in a single draw call
  * (pilasters, vault ribs, skylights, fronds).
  */
@@ -30,12 +56,15 @@ export function InstancedParts({
   transforms,
   castShadow = false,
   receiveShadow = false,
+  reflected = true,
 }: {
   geometry: BufferGeometry;
   material: Material;
   transforms: readonly InstanceTransform[];
   castShadow?: boolean;
   receiveShadow?: boolean;
+  /** False to leave these instances out of the floor's reflection (see DETAIL_LAYER). */
+  reflected?: boolean;
 }) {
   const ref = useRef<InstancedMesh>(null);
   useLayoutEffect(() => {
@@ -57,7 +86,8 @@ export function InstancedParts({
     });
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
-  }, [transforms]);
+    mesh.layers.set(reflected ? 0 : DETAIL_LAYER);
+  }, [transforms, reflected]);
   return (
     <instancedMesh
       ref={ref}
@@ -83,4 +113,13 @@ export function AimedSpotLight({
       <spotLight target={target} {...props} />
     </>
   );
+}
+
+/**
+ * Drop-in replacement for `<boxGeometry args={[w, h, d]} />` inside a mesh,
+ * with softly rounded edges (see bevelledBox).
+ */
+export function BevelledBox({ args, radius }: { args: readonly [number, number, number]; radius?: number }) {
+  const geometry = useDisposable(() => bevelledBox(args[0], args[1], args[2], radius));
+  return <primitive object={geometry} attach="geometry" />;
 }

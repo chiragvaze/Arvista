@@ -397,8 +397,8 @@ export function createUnavailableTexture(title: string, aspect: number): CanvasT
 }
 
 /**
- * Glazing for the vault skylights: pale daylight divided into panes by slim
- * antique-brass glazing bars.
+ * Glazing for the vault skylights: clear sky divided into panes by slim
+ * ivory-painted glazing bars.
  */
 let skylightCache: CanvasTexture | null = null;
 export function getSkylightTexture(): CanvasTexture {
@@ -412,22 +412,22 @@ export function getSkylightTexture(): CanvasTexture {
   if (!ctx) throw new Error("2D canvas is unavailable");
   // Daylight through the glass: pale sky, brighter toward the centre of each pane run.
   const sky = ctx.createLinearGradient(0, 0, w, 0);
-  sky.addColorStop(0, "#cfdbe6");
-  sky.addColorStop(0.5, "#eef3f7");
-  sky.addColorStop(1, "#cfdbe6");
+  sky.addColorStop(0, "#6f9ccb");
+  sky.addColorStop(0.5, "#a9c8e6");
+  sky.addColorStop(1, "#6f9ccb");
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h);
   const haze = ctx.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, h * 0.6);
-  haze.addColorStop(0, "rgba(255,252,244,0.55)");
+  haze.addColorStop(0, "rgba(255,252,244,0.3)");
   haze.addColorStop(1, "rgba(255,252,244,0)");
   ctx.fillStyle = haze;
   ctx.fillRect(0, 0, w, h);
-  // Slim antique-brass glazing bars: four lights across, six along.
-  ctx.fillStyle = "rgba(92,72,46,0.85)";
+  // Slim ivory-painted glazing bars: four lights across, six along.
+  ctx.fillStyle = "rgba(236,228,212,0.95)";
   const cols = 4;
   const rows = 6;
-  for (let i = 1; i < cols; i++) ctx.fillRect((w * i) / cols - 2.5, 0, 5, h);
-  for (let j = 1; j < rows; j++) ctx.fillRect(0, (h * j) / rows - 2, w, 4);
+  for (let i = 1; i < cols; i++) ctx.fillRect((w * i) / cols - 4, 0, 8, h);
+  for (let j = 1; j < rows; j++) ctx.fillRect(0, (h * j) / rows - 3.5, w, 7);
   skylightCache = new CanvasTexture(canvas);
   skylightCache.colorSpace = SRGBColorSpace;
   skylightCache.anisotropy = 4;
@@ -730,11 +730,18 @@ export function createNicheTextures(): NicheTextures {
   wall.fillStyle = vertical;
   wall.fillRect(0, 0, 256, 256);
   const sides = wall.createLinearGradient(0, 0, 256, 0);
-  sides.addColorStop(0, "rgba(70,50,32,0.55)");
-  sides.addColorStop(0.3, "rgba(70,50,32,0)");
-  sides.addColorStop(0.7, "rgba(70,50,32,0)");
-  sides.addColorStop(1, "rgba(70,50,32,0.55)");
+  sides.addColorStop(0, "rgba(52,36,22,0.7)");
+  sides.addColorStop(0.32, "rgba(52,36,22,0)");
+  sides.addColorStop(0.68, "rgba(52,36,22,0)");
+  sides.addColorStop(1, "rgba(52,36,22,0.7)");
   wall.fillStyle = sides;
+  wall.fillRect(0, 0, 256, 256);
+  // A downlight's pool on the back of the niche, behind the urn.
+  const pool = wall.createRadialGradient(128, 70, 4, 128, 90, 120);
+  pool.addColorStop(0, "rgba(255,236,200,0.55)");
+  pool.addColorStop(0.5, "rgba(255,226,180,0.18)");
+  pool.addColorStop(1, "rgba(255,226,180,0)");
+  wall.fillStyle = pool;
   wall.fillRect(0, 0, 256, 256);
   grain(wall, 256, 256, 401);
 

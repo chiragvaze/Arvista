@@ -100,7 +100,7 @@ function createMaterials(): MuseumMaterials {
       map: woodMap,
       bumpMap: woodBump,
       bumpScale: 0.45,
-      roughness: 0.5,
+      roughness: 0.44,
     }),
     // Aged brass: warm, softly brushed.
     brass: new MeshStandardMaterial({ color: "#a88752", metalness: 1, roughness: 0.38 }),
@@ -122,7 +122,7 @@ function createMaterials(): MuseumMaterials {
       map: getGlowTexture(),
       color: "#ff9a40",
       transparent: true,
-      opacity: 1,
+      opacity: 0.7,
       blending: AdditiveBlending,
       depthWrite: false,
     }),
@@ -143,11 +143,13 @@ function createMaterials(): MuseumMaterials {
     mat: new MeshStandardMaterial({ color: "#fbf7ee", map: linen, roughness: 0.97 }),
     matCore: new MeshStandardMaterial({ color: "#f8f3ea", roughness: 0.9 }),
     ceramic: new MeshStandardMaterial({ color: "#2c2622", roughness: 0.38 }),
+    // Palm fronds: a deeper, less saturated green with a slight waxy sheen, as living leaves have.
     frond: new MeshStandardMaterial({
+      color: "#c3cdb0",
       map: getFrondTexture(),
       alphaTest: 0.5,
       side: DoubleSide,
-      roughness: 0.75,
+      roughness: 0.55,
     }),
     leather: new MeshStandardMaterial({ color: "#3a271d", roughness: 0.5 }),
     marbleMap: tex.marble,

@@ -1,4 +1,5 @@
 import { BoxGeometry, BufferAttribute, ExtrudeGeometry, Shape, type BufferGeometry, type ExtrudeGeometryOptions } from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
 /**
  * Builders for the museum's architectural profiles. Shapes are drawn in the XY
@@ -228,4 +229,15 @@ export function metricBox(width: number, height: number, depth: number): BoxGeom
   }
   uv.needsUpdate = true;
   return g;
+}
+
+/**
+ * A box with softly rounded edges. Real stone and timber are never knife-sharp:
+ * a few millimetres of rounding catches a highlight along every edge, which is
+ * much of what makes a moulding read as carved rather than computer-drawn.
+ * One segment per edge keeps it to 108 triangles.
+ */
+export function bevelledBox(width: number, height: number, depth: number, radius = 0.015): BufferGeometry {
+  const r = Math.min(radius, Math.min(width, height, depth) / 2 - 1e-4);
+  return new RoundedBoxGeometry(width, height, depth, 1, r);
 }

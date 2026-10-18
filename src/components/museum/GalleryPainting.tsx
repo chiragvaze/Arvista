@@ -76,7 +76,7 @@ function PictureLight() {
         aim={[0, -0.05, 0]}
         position={LIGHT_POSITION}
         color="#fff0d8"
-        intensity={300}
+        intensity={360}
         angle={0.24}
         penumbra={0.7}
         distance={18}

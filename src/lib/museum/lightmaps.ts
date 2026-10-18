@@ -207,32 +207,57 @@ const DIVIDERS = bayDividerZs();
 const PILASTER_HALF = 0.31;
 const SKIRTING_TOP = 0.46;
 
+/** The recessed panels framed by mouldings in every bay (see GalleryCorridor), for their contact shadows. */
+export interface WallPanels {
+  /** Length of each panel along the wall, centred on its bay. */
+  length: number;
+  /** Width of the moulding band. */
+  band: number;
+  /** Bottom and top of each panel (the rails' centre lines). */
+  spans: readonly (readonly [number, number])[];
+}
+
 /**
  * One corridor wall. The wall plane's u runs from the entrance end on the left
  * wall (x < 0) and from the far end on the right wall, as seen from inside.
  */
-export function bakeCorridorWall(side: -1 | 1): BakedLight {
+export function bakeCorridorWall(side: -1 | 1, panels: WallPanels): BakedLight {
   const u = (z: number) => (side < 0 ? CORRIDOR.startZ - z : z - CORRIDOR.endZ);
-  const p = new SurfacePainter(CORRIDOR_LENGTH, H, 2048, 256, [0.07, 0.062, 0.05]);
+  // 59 px per metre up the wall: enough for the few-centimetre contact shadows under the mouldings.
+  const p = new SurfacePainter(CORRIDOR_LENGTH, H, 2048, 384, [0.045, 0.04, 0.032]);
   for (let bay = 0; bay < CORRIDOR.bayCount; bay++) {
     const z = bayCenterZ(bay);
     const painting = galleryLayout.find((l) => l.bay === bay && l.side === side);
     if (painting) {
       // The picture light's pool: a broad warm field around the frame, brightest just above its centre.
       const { outerWidth, outerHeight } = painting.frame;
-      p.pool(u(z), PAINTING_CENTER_HEIGHT + 0.3, outerWidth / 2 + 1.5, outerHeight / 2 + 1.3, WARM, 0.62);
-      p.pool(u(z), PAINTING_CENTER_HEIGHT + 0.15, outerWidth / 2 + 0.5, outerHeight / 2 + 0.4, WARM, 0.22);
+      p.pool(u(z), PAINTING_CENTER_HEIGHT + 0.3, outerWidth / 2 + 1.5, outerHeight / 2 + 1.3, WARM, 0.74);
+      p.pool(u(z), PAINTING_CENTER_HEIGHT + 0.15, outerWidth / 2 + 0.5, outerHeight / 2 + 0.4, WARM, 0.26);
     } else {
       // A wall washer hidden in the cornice: a scallop of light fanning down from the top of the wall.
-      p.pool(u(z), H + 0.4, 1.6, 4.4, SOFT_WARM, 0.6);
+      p.pool(u(z), H + 0.4, 1.6, 4.4, SOFT_WARM, 0.7);
     }
   }
   // Each pilaster is grazed by the cove light along its length.
   for (const z of DIVIDERS) p.pool(u(z), H - 0.6, 1.0, 2.6, SOFT_WARM, 0.18);
 
   // Contact shadows: floor, cornice overhang, pilasters, and the corridor's end walls.
-  p.shadeY(SKIRTING_TOP, 1.5, 0.5);
-  p.shadeY(H, H - 1.2, 0.62);
+  p.shadeY(SKIRTING_TOP, 1.5, 0.44);
+  p.shadeY(H, H - 1.2, 0.55);
+  // The panel mouldings: light comes from above, so each rail casts a short soft shadow on the wall below it,
+  // and each stile a fainter one either side.
+  for (let bay = 0; bay < CORRIDOR.bayCount; bay++) {
+    const a = u(bayCenterZ(bay) - panels.length / 2);
+    const b = u(bayCenterZ(bay) + panels.length / 2);
+    const [from, to] = [Math.min(a, b), Math.max(a, b)];
+    for (const [bottom, top] of panels.spans) {
+      for (const rail of [bottom, top]) p.shadeY(rail - panels.band / 2, rail - panels.band / 2 - 0.09, 0.62, from, to);
+      for (const edge of [from, to]) {
+        p.shadeX(edge, edge - 0.05, 0.8, bottom, top);
+        p.shadeX(edge, edge + 0.05, 0.8, bottom, top);
+      }
+    }
+  }
   for (const z of DIVIDERS) p.shadeAroundX(u(z), PILASTER_HALF, 0.75, 0.66);
   // u grows into the corridor from the entrance end on the left wall, and from the far end on the right.
   p.shadeX(u(CORRIDOR.startZ), u(CORRIDOR.startZ) - side * 1.6, 0.5);

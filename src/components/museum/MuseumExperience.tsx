@@ -70,6 +70,9 @@ export function MuseumExperience() {
       onTime: (time) => setChapter(chapterAt(time)),
     });
     timelineRef.current = museum.timeline;
+    // TEMP-QA: jump helper for comparison screenshots; remove before handing over.
+    (window as unknown as { __go: (t: number) => void }).__go = (t: number) =>
+      window.scrollTo(0, scrollOffsetFor(museum.timeline, t));
     store.notify();
     return () => {
       museum.dispose();

@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { invalidate } from "@react-three/fiber";
-import { BoxGeometry, ConeGeometry, CylinderGeometry } from "three";
+import { ConeGeometry, CylinderGeometry } from "three";
 import { DOORWAY, FACADE, INNER_FACADE, PLANTER_SPOTS, PORTICO } from "@/lib/museum/layout";
-import { archBandGeometry, archedWallGeometry, frameRingGeometry, metricBox } from "@/lib/museum/geometry";
+import { archBandGeometry, archedWallGeometry, bevelledBox, frameRingGeometry, metricBox } from "@/lib/museum/geometry";
 import { INSCRIPTION_CANVAS, createInscriptionTextures, type InscriptionTextures } from "@/lib/museum/textures";
 import { bakeFacade, bakeInnerFacade } from "@/lib/museum/lightmaps";
 import { bakedStoneMaterial, useMuseumMaterials } from "./materials";
-import { InstancedParts, useDisposable, type InstanceTransform } from "./helpers";
+import { BevelledBox, InstancedParts, useDisposable, type InstanceTransform } from "./helpers";
 import { Planter } from "./Planter";
 import { FloorInlay, type InlayStrip } from "./FloorInlay";
 
@@ -99,9 +99,9 @@ export function Entrance() {
   );
 
   // Pilasters on the outer facade: shaft, base and capital, each drawn instanced.
-  const pilasterShaft = useDisposable(() => new BoxGeometry(0.9, 11.8, 0.3));
-  const pilasterBase = useDisposable(() => new BoxGeometry(1.2, 0.55, 0.46));
-  const pilasterCapital = useDisposable(() => new BoxGeometry(1.25, 0.5, 0.5));
+  const pilasterShaft = useDisposable(() => bevelledBox(0.9, 11.8, 0.3, 0.03));
+  const pilasterBase = useDisposable(() => bevelledBox(1.2, 0.55, 0.46, 0.03));
+  const pilasterCapital = useDisposable(() => bevelledBox(1.25, 0.5, 0.5, 0.04));
   const shafts = useMemo<InstanceTransform[]>(() => PILASTER_XS.map((x) => ({ position: [x, 5.9, FRONT_Z + 0.15] })), []);
   const bases = useMemo<InstanceTransform[]>(() => PILASTER_XS.map((x) => ({ position: [x, 0.275, FRONT_Z + 0.23] })), []);
   const capitals = useMemo<InstanceTransform[]>(() => PILASTER_XS.map((x) => ({ position: [x, 12.05, FRONT_Z + 0.25] })), []);
@@ -124,19 +124,19 @@ export function Entrance() {
       <mesh geometry={archivolt} material={m.stone} position={[0, 0, FRONT_Z]} />
       <mesh geometry={archivoltOuter} material={m.stone} position={[0, 0, FRONT_Z]} />
       <mesh material={m.stone} position={[0, keystoneY, FRONT_Z + 0.22]}>
-        <boxGeometry args={[0.72, 1.05, 0.34]} />
+        <BevelledBox args={[0.72, 1.05, 0.34]} />
       </mesh>
       {[1, -1].map((side) => (
         <group key={side}>
           {/* Impost blocks where the arch springs, and plinths at the foot of the archivolt. */}
           <mesh material={m.stone} position={[side * (FACADE.archHalfWidth + ARCHIVOLT_BAND / 2), FACADE.archSpring - 0.15, FRONT_Z + 0.16]}>
-            <boxGeometry args={[ARCHIVOLT_BAND + 0.2, 0.3, 0.3]} />
+            <BevelledBox args={[ARCHIVOLT_BAND + 0.2, 0.3, 0.3]} />
           </mesh>
           <mesh material={m.darkStone} position={[side * (FACADE.archHalfWidth + ARCHIVOLT_BAND / 2), 0.3, FRONT_Z + 0.14]}>
-            <boxGeometry args={[ARCHIVOLT_BAND + 0.16, 0.6, 0.32]} />
+            <BevelledBox args={[ARCHIVOLT_BAND + 0.16, 0.6, 0.32]} />
           </mesh>
           <mesh material={m.stone} position={[side * (stringCourseX + stringCourseLength / 2), FACADE.archSpring - 0.15, FRONT_Z + 0.06]}>
-            <boxGeometry args={[stringCourseLength, 0.22, 0.12]} />
+            <BevelledBox args={[stringCourseLength, 0.22, 0.12]} />
           </mesh>
         </group>
       ))}
@@ -145,10 +145,10 @@ export function Entrance() {
       <InstancedParts geometry={pilasterCapital} material={m.stone} transforms={capitals} />
       {/* Entablature and cornice across the facade. */}
       <mesh material={m.stone} position={[0, 12.85, FRONT_Z + 0.2]}>
-        <boxGeometry args={[FACADE.width, 1.1, 0.4]} />
+        <BevelledBox args={[FACADE.width, 1.1, 0.4]} />
       </mesh>
       <mesh material={m.stone} position={[0, 13.5, FRONT_Z + 0.32]}>
-        <boxGeometry args={[FACADE.width, 0.24, 0.66]} />
+        <BevelledBox args={[FACADE.width, 0.24, 0.66]} />
       </mesh>
 
       {/* Ribs across the portico vault. */}
@@ -162,7 +162,7 @@ export function Entrance() {
       <mesh geometry={doorBead} material={m.stone} />
       {/* Dark marble threshold under the doors */}
       <mesh material={m.darkStone} position={[0, 0.02, -INNER_FACADE.thickness / 2]} receiveShadow>
-        <boxGeometry args={[DOORWAY.halfWidth * 2, 0.04, INNER_FACADE.thickness]} />
+        <BevelledBox args={[DOORWAY.halfWidth * 2, 0.04, INNER_FACADE.thickness]} />
       </mesh>
 
       {/* Same surround on the gallery side, so the doorway is finished from inside too. */}
@@ -183,24 +183,24 @@ export function Entrance() {
           />
           {/* Impost moulding on the inner facade at the springing of the porch vault. */}
           <mesh material={m.stone} position={[side * (FACADE.archHalfWidth + imposts.innerX) / 2, FACADE.archSpring - 0.1, 0.06]}>
-            <boxGeometry args={[FACADE.archHalfWidth - imposts.innerX, 0.2, 0.12]} />
+            <BevelledBox args={[FACADE.archHalfWidth - imposts.innerX, 0.2, 0.12]} />
           </mesh>
           {/* Pilasters flanking the doorway carry the lanterns, as in a classical portal. */}
           <group position={[side * PORTAL_PILASTER.x, 0, 0]}>
             <mesh material={m.pilaster} position={[0, PORTAL_PILASTER.top / 2, PORTAL_PILASTER.depth / 2]} receiveShadow>
-              <boxGeometry args={[PORTAL_PILASTER.width, PORTAL_PILASTER.top, PORTAL_PILASTER.depth]} />
+              <BevelledBox args={[PORTAL_PILASTER.width, PORTAL_PILASTER.top, PORTAL_PILASTER.depth]} />
             </mesh>
             <mesh material={m.darkStone} position={[0, 0.22, PORTAL_PILASTER.depth / 2 + 0.03]}>
-              <boxGeometry args={[PORTAL_PILASTER.width + 0.16, 0.44, PORTAL_PILASTER.depth + 0.08]} />
+              <BevelledBox args={[PORTAL_PILASTER.width + 0.16, 0.44, PORTAL_PILASTER.depth + 0.08]} />
             </mesh>
             <mesh material={m.stone} position={[0, 0.5, PORTAL_PILASTER.depth / 2 + 0.02]}>
-              <boxGeometry args={[PORTAL_PILASTER.width + 0.08, 0.12, PORTAL_PILASTER.depth + 0.05]} />
+              <BevelledBox args={[PORTAL_PILASTER.width + 0.08, 0.12, PORTAL_PILASTER.depth + 0.05]} />
             </mesh>
             <mesh material={m.stone} position={[0, PORTAL_PILASTER.top - 0.12, PORTAL_PILASTER.depth / 2 + 0.03]}>
-              <boxGeometry args={[PORTAL_PILASTER.width + 0.14, 0.24, PORTAL_PILASTER.depth + 0.08]} />
+              <BevelledBox args={[PORTAL_PILASTER.width + 0.14, 0.24, PORTAL_PILASTER.depth + 0.08]} />
             </mesh>
             <mesh material={m.stone} position={[0, PORTAL_PILASTER.top - 0.3, PORTAL_PILASTER.depth / 2 + 0.015]}>
-              <boxGeometry args={[PORTAL_PILASTER.width + 0.05, 0.06, PORTAL_PILASTER.depth + 0.03]} />
+              <BevelledBox args={[PORTAL_PILASTER.width + 0.05, 0.06, PORTAL_PILASTER.depth + 0.03]} />
             </mesh>
           </group>
         </group>
@@ -257,7 +257,7 @@ function WallLantern({ position }: { position: [number, number, number] }) {
     <group position={position} scale={LANTERN.scale}>
       {/* Wall plate and bracket */}
       <mesh material={m.brass} position={[0, 0.22, 0.015]}>
-        <boxGeometry args={[0.12, 0.3, 0.03]} />
+        <BevelledBox args={[0.12, 0.3, 0.03]} />
       </mesh>
       <mesh material={m.brass} position={[0, 0.3, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.016, 0.016, 0.4, 8]} />
@@ -286,7 +286,7 @@ function WallLantern({ position }: { position: [number, number, number] }) {
           <sphereGeometry args={[0.018, 10, 8]} />
         </mesh>
         {/* A soft halo around the lamp, as the eye sees a bright light in a dim porch */}
-        <sprite material={m.lampHalo} scale={[1.25, 1.25, 1]} position={[0, -0.02, 0.06]} renderOrder={2} />
+        <sprite material={m.lampHalo} scale={[0.85, 0.85, 1]} position={[0, -0.02, 0.06]} renderOrder={2} />
       </group>
     </group>
   );
@@ -306,7 +306,7 @@ function InscriptionTablet() {
       <mesh geometry={border} material={m.stone} position={[0, 0, 0.02]} />
       {/* Slab body stops 6 mm behind the lettered face, so the two never compete for depth. */}
       <mesh material={m.stone} position={[0, 0, 0.0175]}>
-        <boxGeometry args={[TABLET.width, height, 0.035]} />
+        <BevelledBox args={[TABLET.width, height, 0.035]} />
       </mesh>
       <mesh position={[0, 0, 0.041]}>
         <planeGeometry args={[TABLET.width, height]} />
