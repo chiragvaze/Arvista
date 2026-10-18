@@ -2,7 +2,7 @@
 
 import { metricBox } from "@/lib/museum/geometry";
 import { useMuseumMaterials } from "./materials";
-import { useDisposable } from "./helpers";
+import { NotReflected, useDisposable } from "./helpers";
 
 export interface InlayStrip {
   /** Centre of the strip on the floor. */
@@ -23,12 +23,13 @@ const BRASS_HEIGHT = 0.008;
  * on the reference flooring. Each strip is a shallow box with metric UVs.
  */
 export function FloorInlay({ strips }: { strips: readonly InlayStrip[] }) {
+  // They lie on the floor's mirror plane, so their reflection would never show.
   return (
-    <group>
+    <NotReflected>
       {strips.map((s, i) => (
         <Strip key={i} strip={s} />
       ))}
-    </group>
+    </NotReflected>
   );
 }
 

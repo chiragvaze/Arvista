@@ -45,8 +45,8 @@ export const BASE_FOV = 42;
  * distance is derived from each frame's size, so a small canvas is approached
  * more closely and still reads as a prominent, deliberately hung work.
  */
-const VIEW_FILL = 0.64;
-const VIEW_DISTANCE_RANGE = [4.0, 5.6] as const;
+const VIEW_FILL = 0.66;
+const VIEW_DISTANCE_RANGE = [3.6, 5.6] as const;
 /** Sideways aim, as a share of the viewing distance, that places the painting left of the information panel. */
 const VIEW_AIM_OFFSET = 0.145;
 const VIEW_DISTANCE_PORTRAIT = 4.8;

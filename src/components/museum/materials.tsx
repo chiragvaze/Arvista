@@ -83,7 +83,7 @@ function createMaterials(): MuseumMaterials {
   return {
     // Honed ivory limestone for the walls.
     plaster: new MeshStandardMaterial({
-      color: "#f7eee0",
+      color: "#f6ebda",
       map: plasterMap,
       bumpMap: plasterBump,
       bumpScale: 0.08,

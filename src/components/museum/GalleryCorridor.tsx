@@ -13,7 +13,7 @@ import {
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { BENCH_BAY, CORRIDOR, PLANTER_SPOTS, VAULT_RADIUS, bayCenterZ, bayDividerZs } from "@/lib/museum/layout";
-import { archBandGeometry, archedWallGeometry, bevelledBox, metricBox, scaleUVs } from "@/lib/museum/geometry";
+import { archBandGeometry, archedWallGeometry, bevelledBox, metricBox, scaleUVs, withBaseShading } from "@/lib/museum/geometry";
 import { bakeCorridorWall, bakeEndWall, bakeVault, bakeVaultRelief, fitToMetres, CORRIDOR_LENGTH } from "@/lib/museum/lightmaps";
 import { createNicheTextures } from "@/lib/museum/textures";
 import { bakedStoneMaterial, useMuseumMaterials } from "./materials";
@@ -199,7 +199,8 @@ export function GalleryCorridor() {
     // Stone pieces have softly rounded edges that catch the light (see bevelledBox); the polished
     // dark-marble plinths and baseboard keep crisp arrises and metric UVs.
     const geometries = {
-      pilaster: bevelledBox(0.22, H, 0.62, 0.025),
+      // Shaded toward the floor like the wall behind it (see the walls' baked contact shadows).
+      pilaster: withBaseShading(bevelledBox(0.22, H, 0.62, 0.025), 0.62, 2.6),
       capital: bevelledBox(0.34, 0.32, 0.82, 0.03),
       abacus: bevelledBox(0.4, 0.1, 0.94, 0.02),
       plinth: metricBox(0.36, 0.46, 0.88),
@@ -287,8 +288,10 @@ export function GalleryCorridor() {
     const endLit = bakedStoneMaterial(m.plaster, bakeEndWall(ARCH, END_WALL_HEIGHT), { width: W * 2, height: END_WALL_HEIGHT, u0: -W }, 2.6);
     const lunette = m.skylight.clone();
     lunette.side = FrontSide;
-    const all = [left, right, vaultBase, trim, vaultLit, endLit, lunette];
-    return { left, right, vault: vaultLit, trim, endWall: endLit, lunette, dispose: () => all.forEach((x) => x.dispose()) };
+    const pilaster = m.pilaster.clone();
+    pilaster.vertexColors = true;
+    const all = [left, right, vaultBase, trim, vaultLit, endLit, lunette, pilaster];
+    return { left, right, vault: vaultLit, trim, endWall: endLit, lunette, pilaster, dispose: () => all.forEach((x) => x.dispose()) };
   });
 
   const hallZ = CORRIDOR.endZ - END_WALL_THICKNESS;
@@ -306,11 +309,11 @@ export function GalleryCorridor() {
 
       <InstancedParts geometry={rib} material={m.stone} transforms={RIBS} />
       <InstancedParts geometry={skylight} material={m.skylight} transforms={SKYLIGHTS} />
-      <InstancedParts geometry={glazing.end} material={surfaces.trim} transforms={SKYLIGHT_ENDS} />
-      <InstancedParts geometry={glazing.left} material={surfaces.trim} transforms={SKYLIGHTS} />
-      <InstancedParts geometry={glazing.right} material={surfaces.trim} transforms={SKYLIGHTS} />
+      <InstancedParts geometry={glazing.end} material={surfaces.trim} transforms={SKYLIGHT_ENDS} reflected={false} />
+      <InstancedParts geometry={glazing.left} material={surfaces.trim} transforms={SKYLIGHTS} reflected={false} />
+      <InstancedParts geometry={glazing.right} material={surfaces.trim} transforms={SKYLIGHTS} reflected={false} />
 
-      <InstancedParts geometry={pieces.pilaster} material={m.pilaster} transforms={PILASTERS} receiveShadow />
+      <InstancedParts geometry={pieces.pilaster} material={surfaces.pilaster} transforms={PILASTERS} receiveShadow />
       <InstancedParts geometry={pieces.capital} material={m.stone} transforms={CAPITALS} />
       <InstancedParts geometry={pieces.abacus} material={m.stone} transforms={ABACI} />
       <InstancedParts geometry={pieces.plinth} material={m.darkStone} transforms={PLINTHS} />
@@ -321,7 +324,7 @@ export function GalleryCorridor() {
       <InstancedParts geometry={pieces.beadRail} material={m.stone} transforms={PANEL_PARTS.beadRails} />
       <InstancedParts geometry={pieces.bandStile} material={m.stone} transforms={PANEL_PARTS.bandStiles} />
       <InstancedParts geometry={pieces.beadStile} material={m.stone} transforms={PANEL_PARTS.beadStiles} />
-      <InstancedParts geometry={pieces.dentil} material={m.stone} transforms={DENTILS} />
+      <InstancedParts geometry={pieces.dentil} material={m.stone} transforms={DENTILS} reflected={false} />
 
       {[-1, 1].map((side) => (
         <group key={side}>
@@ -347,7 +350,7 @@ export function GalleryCorridor() {
       {lightZs.map((z) => (
         // Hung high in the vault: the light grazes the walls from above, so it models the pilasters, cornice and
         // mouldings and falls off down the wall, rather than flooding the wall faces evenly.
-        <pointLight key={z} position={[0, H + 0.8, z]} color="#ffe6c4" intensity={24} distance={30} decay={2} />
+        <pointLight key={z} position={[0, H + 0.8, z]} color="#ffdfb8" intensity={26} distance={30} decay={2} />
       ))}
 
       {/* Palms in the entry bay and the last bay, clear of the paintings. */}
@@ -421,7 +424,7 @@ function Bench({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
       <mesh geometry={parts.cushion} material={m.leather} position={[0, 0.48, 0]} castShadow />
-      <InstancedParts geometry={parts.button} material={m.leather} transforms={BENCH_BUTTONS} />
+      <InstancedParts geometry={parts.button} material={m.leather} transforms={BENCH_BUTTONS} reflected={false} />
       <mesh geometry={parts.base} material={m.wood} position={[0, 0.3, 0]} />
       <InstancedParts geometry={parts.leg} material={m.wood} transforms={BENCH_LEGS} />
     </group>

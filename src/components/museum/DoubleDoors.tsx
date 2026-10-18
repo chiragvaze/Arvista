@@ -7,7 +7,7 @@ import { DOORWAY, CORRIDOR } from "@/lib/museum/layout";
 import { bevelledPanelGeometry, doorHeadPanelGeometry, doorLeafGeometry, frameRingGeometry } from "@/lib/museum/geometry";
 import type { MotionStore } from "@/lib/museum/motion";
 import { useMuseumMaterials } from "./materials";
-import { AimedSpotLight, useDisposable } from "./helpers";
+import { AimedSpotLight, NotReflected, useDisposable } from "./helpers";
 
 const GAP = 0.008;
 const T = DOORWAY.leafThickness;
@@ -117,39 +117,42 @@ function DoorLeaf({ side }: { side: 1 | -1 }) {
       {/* Arched head panels, outside and inside */}
       <mesh geometry={parts.head} material={m.wood} position={[0, 0, T]} />
       <mesh geometry={parts.head} material={m.wood} position={[0, 0, 0]} scale={[1, 1, -1]} />
-      {side === -1 && (
-        // Brass meeting strip on the right leaf covers the gap between the leaves on the outside.
-        <mesh material={m.brass} position={[side * LEAF_W + 0.006, 3.95, T + 0.008]}>
-          <boxGeometry args={[0.036, 7.9, 0.016]} />
-        </mesh>
-      )}
-      {/* Antique-brass pulls on long backplates with finials, on both faces near the meeting edge */}
-      {[1, -1].map((face) => (
-        <group key={face} position={[handleX, 1.55, face > 0 ? T : 0]}>
-          <mesh material={m.brass} position={[0, 0, face * 0.007]}>
-            <boxGeometry args={[0.08, 1.24, 0.014]} />
+      {/* Slender brass and bronze hardware: seen by the visitor, left out of the floor's reflection. */}
+      <NotReflected>
+        {side === -1 && (
+          // Brass meeting strip on the right leaf covers the gap between the leaves on the outside.
+          <mesh material={m.brass} position={[side * LEAF_W + 0.006, 3.95, T + 0.008]}>
+            <boxGeometry args={[0.036, 7.9, 0.016]} />
           </mesh>
-          {[-0.66, 0.66].map((y) => (
-            <mesh key={y} material={m.brass} position={[0, y, face * 0.012]}>
-              <sphereGeometry args={[0.032, 12, 8]} />
+        )}
+        {/* Antique-brass pulls on long backplates with finials, on both faces near the meeting edge */}
+        {[1, -1].map((face) => (
+          <group key={face} position={[handleX, 1.55, face > 0 ? T : 0]}>
+            <mesh material={m.brass} position={[0, 0, face * 0.007]}>
+              <boxGeometry args={[0.08, 1.24, 0.014]} />
             </mesh>
-          ))}
-          <mesh material={m.brass} position={[0, 0, face * 0.08]}>
-            <cylinderGeometry args={[0.023, 0.023, 0.86, 16]} />
+            {[-0.66, 0.66].map((y) => (
+              <mesh key={y} material={m.brass} position={[0, y, face * 0.012]}>
+                <sphereGeometry args={[0.032, 12, 8]} />
+              </mesh>
+            ))}
+            <mesh material={m.brass} position={[0, 0, face * 0.08]}>
+              <cylinderGeometry args={[0.023, 0.023, 0.86, 16]} />
+            </mesh>
+            {[-0.36, 0.36].map((y) => (
+              <mesh key={y} material={m.brass} position={[0, y, face * 0.045]} rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.014, 0.018, 0.075, 10]} />
+              </mesh>
+            ))}
+          </group>
+        ))}
+        {/* Hinge knuckles on the interior face */}
+        {[0.9, 3.4, 5.2].map((y) => (
+          <mesh key={y} material={m.bronze} position={[0, y, -0.02]}>
+            <cylinderGeometry args={[0.035, 0.035, 0.3, 10]} />
           </mesh>
-          {[-0.36, 0.36].map((y) => (
-            <mesh key={y} material={m.brass} position={[0, y, face * 0.045]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.014, 0.018, 0.075, 10]} />
-            </mesh>
-          ))}
-        </group>
-      ))}
-      {/* Hinge knuckles on the interior face */}
-      {[0.9, 3.4, 5.2].map((y) => (
-        <mesh key={y} material={m.bronze} position={[0, y, -0.02]}>
-          <cylinderGeometry args={[0.035, 0.035, 0.3, 10]} />
-        </mesh>
-      ))}
+        ))}
+      </NotReflected>
     </group>
   );
 }

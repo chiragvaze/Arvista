@@ -5,7 +5,7 @@ import type { QualityTier } from "@/lib/museum/deviceTier";
 import type { PaintingLayout } from "@/lib/museum/galleryLayout";
 import { CORRIDOR, PAINTING_CENTER_HEIGHT } from "@/lib/museum/layout";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { AimedSpotLight } from "./helpers";
+import { AimedSpotLight, NotReflected } from "./helpers";
 import { useMuseumMaterials } from "./materials";
 import { PaintingFrame } from "./PaintingFrame";
 import { PaintingArtwork, UnavailableArtwork, useArtworkTexture } from "./PaintingArtwork";
@@ -35,9 +35,11 @@ export function GalleryPainting({ layout, quality }: { layout: PaintingLayout; q
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
       {/* Soft drop shadow: the light comes from across the corridor and above, so it falls slightly low. */}
-      <mesh material={m.frameShadow} position={[0, -0.07, 0.004]} scale={[frame.outerWidth + 0.34, frame.outerHeight + 0.34, 1]}>
-        <planeGeometry args={[1, 1]} />
-      </mesh>
+      <NotReflected>
+        <mesh material={m.frameShadow} position={[0, -0.07, 0.004]} scale={[frame.outerWidth + 0.34, frame.outerHeight + 0.34, 1]}>
+          <planeGeometry args={[1, 1]} />
+        </mesh>
+      </NotReflected>
       <PaintingFrame frame={frame} castShadow={false} />
       <ErrorBoundary fallback={<UnavailableArtwork width={w} height={h} offsetY={y} title={painting.title} />}>
         <Suspense fallback={<PaintingArtwork width={w} height={h} offsetY={y} texture={null} />}>
@@ -58,20 +60,22 @@ function PictureLight() {
   const m = useMuseumMaterials();
   return (
     <>
-      {/* Antique-brass can on a short stem, tilted down toward the painting */}
-      <group position={LIGHT_POSITION}>
-        <mesh material={m.brass} position={[0, 0.09, 0]}>
-          <cylinderGeometry args={[0.012, 0.012, 0.18, 6]} />
-        </mesh>
-        <group rotation={[-Math.PI / 2 - LIGHT_PITCH, 0, 0]}>
-          <mesh material={m.brass}>
-            <cylinderGeometry args={[0.065, 0.075, 0.24, 16]} />
+      {/* Antique-brass can on a short stem, tilted down toward the painting (too small to matter in the reflection) */}
+      <NotReflected>
+        <group position={LIGHT_POSITION}>
+          <mesh material={m.brass} position={[0, 0.09, 0]}>
+            <cylinderGeometry args={[0.012, 0.012, 0.18, 6]} />
           </mesh>
-          <mesh material={m.fixtureLens} position={[0, 0.121, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[0.055, 16]} />
-          </mesh>
+          <group rotation={[-Math.PI / 2 - LIGHT_PITCH, 0, 0]}>
+            <mesh material={m.brass}>
+              <cylinderGeometry args={[0.065, 0.075, 0.24, 16]} />
+            </mesh>
+            <mesh material={m.fixtureLens} position={[0, 0.121, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <circleGeometry args={[0.055, 16]} />
+            </mesh>
+          </group>
         </group>
-      </group>
+      </NotReflected>
       <AimedSpotLight
         aim={[0, -0.05, 0]}
         position={LIGHT_POSITION}

@@ -8,7 +8,7 @@ import { archBandGeometry, archedWallGeometry, bevelledBox, frameRingGeometry, m
 import { INSCRIPTION_CANVAS, createInscriptionTextures, type InscriptionTextures } from "@/lib/museum/textures";
 import { bakeFacade, bakeInnerFacade } from "@/lib/museum/lightmaps";
 import { bakedStoneMaterial, useMuseumMaterials } from "./materials";
-import { BevelledBox, InstancedParts, useDisposable, type InstanceTransform } from "./helpers";
+import { BevelledBox, InstancedParts, NotReflected, useDisposable, type InstanceTransform } from "./helpers";
 import { Planter } from "./Planter";
 import { FloorInlay, type InlayStrip } from "./FloorInlay";
 
@@ -255,36 +255,41 @@ function WallLantern({ position }: { position: [number, number, number] }) {
   }, []);
   return (
     <group position={position} scale={LANTERN.scale}>
-      {/* Wall plate and bracket */}
-      <mesh material={m.brass} position={[0, 0.22, 0.015]}>
-        <BevelledBox args={[0.12, 0.3, 0.03]} />
-      </mesh>
-      <mesh material={m.brass} position={[0, 0.3, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.016, 0.016, 0.4, 8]} />
-      </mesh>
-      <mesh material={m.brass} position={[0, 0.2, 0.14]} rotation={[Math.PI / 4, 0, 0]}>
-        <cylinderGeometry args={[0.01, 0.01, 0.26, 6]} />
-      </mesh>
+      {/* The lamp and glass appear in the floor's reflection; the slender metalwork is left out of it. */}
+      <NotReflected>
+        {/* Wall plate and bracket */}
+        <mesh material={m.brass} position={[0, 0.22, 0.015]}>
+          <BevelledBox args={[0.12, 0.3, 0.03]} />
+        </mesh>
+        <mesh material={m.brass} position={[0, 0.3, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.016, 0.016, 0.4, 8]} />
+        </mesh>
+        <mesh material={m.brass} position={[0, 0.2, 0.14]} rotation={[Math.PI / 4, 0, 0]}>
+          <cylinderGeometry args={[0.01, 0.01, 0.26, 6]} />
+        </mesh>
+        <group position={[0, 0, 0.42]}>
+          {/* Hanger from the bracket to the cap */}
+          <mesh material={m.brass} position={[0, 0.27, 0]}>
+            <cylinderGeometry args={[0.01, 0.01, 0.07, 6]} />
+          </mesh>
+          <mesh material={m.brass} position={[0, 0.315, 0]}>
+            <sphereGeometry args={[0.022, 10, 8]} />
+          </mesh>
+          <InstancedParts geometry={parts.bar} material={m.brass} transforms={bars} />
+          <mesh geometry={parts.ring} material={m.brass} position={[0, 0.195, 0]} />
+          <mesh geometry={parts.cap} material={m.brass} position={[0, 0.285, 0]} />
+          <mesh geometry={parts.bowl} material={m.brass} position={[0, -0.225, 0]} />
+          <mesh material={m.brass} position={[0, -0.28, 0]}>
+            <sphereGeometry args={[0.018, 10, 8]} />
+          </mesh>
+        </group>
+      </NotReflected>
       <group position={[0, 0, 0.42]}>
-        {/* Hanger from the bracket to the cap */}
-        <mesh material={m.brass} position={[0, 0.27, 0]}>
-          <cylinderGeometry args={[0.01, 0.01, 0.07, 6]} />
-        </mesh>
-        <mesh material={m.brass} position={[0, 0.315, 0]}>
-          <sphereGeometry args={[0.022, 10, 8]} />
-        </mesh>
         {/* Lamp first, then the frosted glass around it */}
         <mesh material={m.lanternFlame} position={[0, -0.02, 0]}>
           <sphereGeometry args={[0.04, 12, 8]} />
         </mesh>
         <mesh geometry={parts.glass} material={m.lanternGlass} renderOrder={1} />
-        <InstancedParts geometry={parts.bar} material={m.brass} transforms={bars} />
-        <mesh geometry={parts.ring} material={m.brass} position={[0, 0.195, 0]} />
-        <mesh geometry={parts.cap} material={m.brass} position={[0, 0.285, 0]} />
-        <mesh geometry={parts.bowl} material={m.brass} position={[0, -0.225, 0]} />
-        <mesh material={m.brass} position={[0, -0.28, 0]}>
-          <sphereGeometry args={[0.018, 10, 8]} />
-        </mesh>
         {/* A soft halo around the lamp, as the eye sees a bright light in a dim porch */}
         <sprite material={m.lampHalo} scale={[0.85, 0.85, 1]} position={[0, -0.02, 0.06]} renderOrder={2} />
       </group>

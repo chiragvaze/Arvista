@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { CylinderGeometry, LatheGeometry, PlaneGeometry, Vector2 } from "three";
 import { useMuseumMaterials } from "./materials";
-import { InstancedParts, useDisposable, type InstanceTransform } from "./helpers";
+import { DETAIL_LAYER, InstancedParts, useDisposable, type InstanceTransform } from "./helpers";
 
 /** Urn profile (radius, height) in metres before scaling: a tall glazed vessel with a rolled lip. */
 const URN_PROFILE: [number, number][] = [
@@ -57,7 +57,8 @@ export function Planter({ position, seed, scale = 1 }: { position: [number, numb
   return (
     <group position={position} scale={scale}>
       <mesh geometry={urn} material={m.ceramic} castShadow receiveShadow />
-      <mesh geometry={soil} material={m.leather} position={[0, RIM, 0]} />
+      {/* Soil inside the rim: never visible in the floor's reflection */}
+      <mesh geometry={soil} material={m.leather} position={[0, RIM, 0]} layers={DETAIL_LAYER} />
       <InstancedParts geometry={frond} material={m.frond} transforms={fronds} />
     </group>
   );

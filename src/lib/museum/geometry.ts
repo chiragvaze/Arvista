@@ -1,4 +1,4 @@
-import { BoxGeometry, BufferAttribute, ExtrudeGeometry, Shape, type BufferGeometry, type ExtrudeGeometryOptions } from "three";
+import { BoxGeometry, BufferAttribute, ExtrudeGeometry, Float32BufferAttribute, Shape, type BufferGeometry, type ExtrudeGeometryOptions } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
 /**
@@ -240,4 +240,24 @@ export function metricBox(width: number, height: number, depth: number): BoxGeom
 export function bevelledBox(width: number, height: number, depth: number, radius = 0.015): BufferGeometry {
   const r = Math.min(radius, Math.min(width, height, depth) / 2 - 1e-4);
   return new RoundedBoxGeometry(width, height, depth, 1, r);
+}
+
+/**
+ * Bakes a soft vertical shading gradient into a geometry's vertex colours: the
+ * bottom `ramp` metres darken toward `bottomShade` at the base, as a tall
+ * element standing on the floor is shaded where it meets it. Use with a
+ * material that has vertexColors enabled.
+ */
+export function withBaseShading<T extends BufferGeometry>(geometry: T, bottomShade: number, ramp: number): T {
+  geometry.computeBoundingBox();
+  const bottom = geometry.boundingBox?.min.y ?? 0;
+  const position = geometry.getAttribute("position");
+  const colors = new Float32Array(position.count * 3);
+  for (let i = 0; i < position.count; i++) {
+    const t = Math.min(1, Math.max(0, (position.getY(i) - bottom) / ramp));
+    const shade = bottomShade + (1 - bottomShade) * t * t * (3 - 2 * t);
+    colors.set([shade, shade, shade], i * 3);
+  }
+  geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
+  return geometry;
 }

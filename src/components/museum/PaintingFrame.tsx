@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { frameRingGeometry } from "@/lib/museum/geometry";
 import type { FrameLayout } from "@/lib/museum/galleryLayout";
 import { useMuseumMaterials } from "./materials";
+import { NotReflected } from "./helpers";
 
 /** Depths in metres, measured out from the wall (z = 0). */
 export const FRAME_DEPTH = {
@@ -21,11 +22,11 @@ const MAT_CORE = 0.007;
  * under its outer neighbour, so no two side faces coincide and no gap opens.
  */
 const PROFILE = {
-  lip: [0.032, 0.15, 0.01],
-  face: [0.068, 0.124, 0.024],
-  step: [0.05, 0.097, 0.012],
+  lip: [0.026, 0.14, 0.009],
+  face: [0.054, 0.118, 0.02],
+  step: [0.04, 0.094, 0.01],
   /** Antique-gold sight edge lying on the mat at the window. */
-  fillet: [0.022, 0.08, 0.006],
+  fillet: [0.02, 0.08, 0.006],
 } as const;
 const TUCK = 0.004;
 
@@ -80,16 +81,19 @@ export function PaintingFrame({ frame, castShadow }: { frame: FrameLayout; castS
 
   return (
     <group>
-      {/* Backing board closing the gap between frame and wall */}
-      <mesh material={m.darkStone} position={[0, 0, 0.02]}>
-        <boxGeometry args={[outerWidth - 0.04, outerHeight - 0.04, 0.04]} />
-      </mesh>
       <mesh geometry={rings.lip.geometry} material={m.frameWoodDark} position={[0, 0, rings.lip.z]} castShadow={castShadow} />
       <mesh geometry={rings.face.geometry} material={m.frameWood} position={[0, 0, rings.face.z]} castShadow={castShadow} />
-      <mesh geometry={rings.step.geometry} material={m.frameWoodDark} position={[0, 0, rings.step.z]} />
-      <mesh geometry={rings.fillet.geometry} material={m.frameGold} position={[0, 0, rings.fillet.z]} />
       <mesh geometry={matGeometries.mat} material={m.mat} position={[0, 0, FRAME_DEPTH.mat]} receiveShadow />
-      <mesh geometry={matGeometries.core} material={m.matCore} position={[0, artOffsetY, FRAME_DEPTH.mat]} />
+      {/* Fine detail that would not register in the floor's blurred reflection */}
+      <NotReflected>
+        {/* Backing board closing the gap between frame and wall */}
+        <mesh material={m.darkStone} position={[0, 0, 0.02]}>
+          <boxGeometry args={[outerWidth - 0.04, outerHeight - 0.04, 0.04]} />
+        </mesh>
+        <mesh geometry={rings.step.geometry} material={m.frameWoodDark} position={[0, 0, rings.step.z]} />
+        <mesh geometry={rings.fillet.geometry} material={m.frameGold} position={[0, 0, rings.fillet.z]} />
+        <mesh geometry={matGeometries.core} material={m.matCore} position={[0, artOffsetY, FRAME_DEPTH.mat]} />
+      </NotReflected>
     </group>
   );
 }

@@ -36,7 +36,7 @@ export function MuseumScene({ store, quality }: { store: MotionStore; quality: Q
       {/* Sky: warm ceiling light. Ground: the warm bounce from the cream marble floor, which keeps the undersides
           of mouldings, cornices and dentils from falling to black. Kept low: the walls and vault get their soft
           light from baked light maps, so the fill no longer flattens the modelling. */}
-      <hemisphereLight args={["#ffe8cc", "#9a8162", 0.17]} />
+      <hemisphereLight args={["#ffe8cc", "#9a8162", 0.14]} />
 
       {/* Warm downlight from above the portico, washing the doors and the carved inscription above them. */}
       <AimedSpotLight

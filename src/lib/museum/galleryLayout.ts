@@ -15,16 +15,17 @@ export const ARTWORK_DISPLAY_SCALE = 5;
 const DEFAULT_ARTWORK_HEIGHT = 1.6;
 
 export const FRAME_PROFILE = {
-  /** Width of the walnut moulding. */
-  moulding: 0.15,
+  /** Width of the walnut moulding (the sum of the profile in PaintingFrame). */
+  moulding: 0.12,
   /**
    * Mat width as a share of the artwork height for a full-size (40 cm) canvas.
-   * Smaller canvases get a proportionally wider mat (the same absolute width),
-   * so a small work reads as deliberately presented rather than enlarged.
+   * Smaller canvases get a proportionally wider mat (growing with the square
+   * root of the size difference), so a small work reads as deliberately
+   * presented without the mat overwhelming the painting.
    */
-  matShare: 0.085,
+  matShare: 0.065,
   /** Narrowest mat allowed around the artwork. */
-  minMat: 0.12,
+  minMat: 0.09,
   /** The artwork sits slightly above centre in its mat (a classic bottom-weighted mat). */
   matLift: 0.12,
 } as const;
@@ -49,7 +50,7 @@ export function frameLayout(painting: Painting): FrameLayout {
   const keptHeight = image.crop ? image.crop.height / image.crop.sourceHeight : 1;
   const artHeight = physicalSize ? (physicalSize.heightCm / 100) * ARTWORK_DISPLAY_SCALE * keptHeight : DEFAULT_ARTWORK_HEIGHT;
   const artWidth = artHeight * aspect;
-  const mat = Math.max(FRAME_PROFILE.minMat, REFERENCE_ARTWORK_HEIGHT * FRAME_PROFILE.matShare);
+  const mat = Math.max(FRAME_PROFILE.minMat, artHeight * FRAME_PROFILE.matShare * Math.sqrt(REFERENCE_ARTWORK_HEIGHT / artHeight));
   const border = 2 * (mat + FRAME_PROFILE.moulding);
   return {
     artWidth,

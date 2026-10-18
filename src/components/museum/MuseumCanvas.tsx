@@ -100,11 +100,6 @@ function ShaderWarmup({ onCompiled }: { onCompiled: () => void }) {
 /** Fires once the scene has mounted and two frames have been drawn. */
 function ReadySignal({ onReady }: { onReady: () => void }) {
   const invalidate = useThree((s) => s.invalidate);
-  // TEMP-QA: expose the renderer for measurements; remove before handing over.
-  const getState = useThree((s) => s.get);
-  useEffect(() => {
-    (window as unknown as { __three: unknown }).__three = getState();
-  }, [getState]);
   useEffect(() => {
     let second = 0;
     invalidate();
