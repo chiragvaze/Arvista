@@ -3,12 +3,11 @@
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PerspectiveCamera } from "three";
-import { CameraRig, cameraWaypoints } from "@/lib/museum/cameraWaypoints";
+import { BASE_FOV, CameraRig, cameraWaypoints } from "@/lib/museum/cameraWaypoints";
 import type { MotionStore } from "@/lib/museum/motion";
 
 /** Viewports narrower than this use the portrait framing of each waypoint. */
 const PORTRAIT_ASPECT = 0.85;
-const BASE_FOV = 42;
 const MAX_FOV = 68;
 /** Horizontal half-extent (tan) the landscape framing was composed for. */
 const REFERENCE_TAN_H = Math.tan(((BASE_FOV / 2) * Math.PI) / 180) * 1.45;
@@ -33,7 +32,8 @@ export function MuseumCamera({ store }: { store: MotionStore }) {
     const { camera, invalidate } = get();
     if (camera instanceof PerspectiveCamera) {
       camera.fov = fovForAspect(aspect);
-      camera.near = 0.05;
+      // The camera never comes closer than ~1 m to any surface; a larger near plane triples depth precision.
+      camera.near = 0.15;
       camera.far = 140;
       camera.updateProjectionMatrix();
     }

@@ -23,30 +23,46 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgb(8 6 4 / 0.55) 100%);
+  background: radial-gradient(ellipse at 50% 45%, transparent 58%, rgb(8 6 4 / 0.5) 100%);
 }
 
-/* ---------- Entrance branding ---------- */
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A small brass diamond, used in rules and dividers throughout */
+.diamond {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--color-brass);
+  transform: rotate(45deg);
+}
+
+/* ---------- Entrance ---------- */
 
 .hero {
+  /* The carved inscription in the 3D entrance carries the branding; only quiet text sits over it. */
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 0 1.5rem;
+  justify-content: flex-end;
+  gap: 1.1rem;
+  padding: 0 1.5rem clamp(1.5rem, 5vh, 3rem);
   pointer-events: none;
   text-align: center;
   color: var(--color-ivory);
-}
-
-.heroBrand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translateY(-6vh);
-  text-shadow: 0 2px 18px rgb(10 6 3 / 0.75);
 }
 
 .heroTitle {
@@ -57,7 +73,7 @@
   letter-spacing: 0.16em;
   line-height: 1;
   text-transform: uppercase;
-  color: #f1dfbd;
+  color: #efdcb8;
   /* optical centring: letter-spacing adds trailing space */
   padding-left: 0.16em;
 }
@@ -80,28 +96,37 @@
   background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
 }
 
+.heroAttribution {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(0.68rem, 1.1vw, 0.8rem);
+  letter-spacing: 0.3em;
+  padding-left: 0.3em;
+  text-transform: uppercase;
+  color: #e6d3ad;
+  text-shadow: 0 1px 12px rgb(8 5 3 / 0.9);
+}
+
 .heroTagline {
   margin: 0;
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
-  color: #efe3cf;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  color: #efe5d3;
+  text-shadow: 0 1px 14px rgb(8 5 3 / 0.85);
 }
 
 .scrollCue {
-  position: absolute;
-  bottom: clamp(1.5rem, 5vh, 3rem);
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.7rem;
+  margin-top: 0.4rem;
 }
 
 .scrollCueText {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: #e9dcc6;
@@ -134,7 +159,7 @@
   100% { transform: translateY(0); opacity: 0; }
 }
 
-/* ---------- Painting information ---------- */
+/* ---------- Painting label (ivory exhibition card) ---------- */
 
 .panel {
   /* Centred with auto margins so `transform` stays free for the GSAP fade */
@@ -142,17 +167,39 @@
   top: 0;
   bottom: 0;
   right: clamp(5.5rem, 8vw, 8rem);
-  width: min(23rem, 31vw);
+  width: min(26.5rem, 33vw);
   height: max-content;
-  max-height: 80vh;
+  max-height: 84vh;
   margin-block: auto;
   overflow-y: auto;
-  padding: 2rem 2rem 1.75rem;
-  background: rgb(18 13 9 / 0.86);
-  border: 1px solid rgb(201 164 106 / 0.28);
-  color: var(--color-ivory);
+  padding: 2.15rem 2.4rem 1.9rem;
+  /* Heavy ivory card stock, faintly warmer toward the foot, with a fine inset brass rule like a gilt fillet. */
+  background: linear-gradient(180deg, #fbf8f1 0%, #f5f0e6 100%);
+  color: var(--color-charcoal);
+  outline: 1px solid rgb(168 135 82 / 0.38);
+  outline-offset: -9px;
+  box-shadow:
+    0 26px 60px rgb(10 6 3 / 0.4),
+    0 2px 6px rgb(10 6 3 / 0.18);
   visibility: hidden;
   opacity: 0;
+}
+
+.panelIndex {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0 0 1.3rem;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: var(--color-muted);
+}
+
+.panelRule {
+  flex: 1;
+  height: 1px;
+  background: rgb(168 135 82 / 0.45);
 }
 
 .panelBadge {
@@ -166,92 +213,178 @@
   background: #e8cf9e;
 }
 
-.panelEyebrow {
-  margin: 0 0 0.4rem;
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--color-gold);
+.panelTitle {
+  margin: 0 0 0.9rem;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(1.9rem, 2.6vw, 2.55rem);
+  line-height: 1.1;
+  letter-spacing: 0.005em;
+  color: #1f1c18;
+  text-wrap: balance;
 }
 
-.panelTitle {
-  margin: 0 0 1.1rem;
+.panelLead {
+  margin: 0 0 0.8rem;
   font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
-  line-height: 1.15;
+  font-style: italic;
+  font-size: 1.06rem;
+  line-height: 1.55;
+  color: #5c5247;
+}
+
+.panelBody {
+  margin: 0;
+  max-width: 34em;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.68;
+  color: #403a33;
+  /* The artist's line breaks are part of the text */
+  white-space: pre-line;
+}
+
+.panelDivider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.35rem 0 1.1rem;
+}
+
+.panelDivider::before,
+.panelDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgb(168 135 82 / 0.4);
 }
 
 .panelFacts {
   display: grid;
-  gap: 0.45rem;
-  margin: 0 0 1.4rem;
-  padding: 0.9rem 0;
-  border-top: 1px solid rgb(244 236 223 / 0.14);
-  border-bottom: 1px solid rgb(244 236 223 / 0.14);
+  gap: 0.5rem;
+  margin: 0 0 1.6rem;
   font-family: var(--font-sans);
-  font-size: 0.82rem;
 }
 
 .panelFact {
   display: grid;
-  grid-template-columns: 6.5rem 1fr;
+  grid-template-columns: 7rem 1fr;
+  align-items: baseline;
   gap: 0.75rem;
 }
 
 .panelFact dt {
-  color: #b6a891;
-  letter-spacing: 0.04em;
+  font-size: 0.63rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-muted);
 }
 
 .panelFact dd {
   margin: 0;
-}
-
-.panelDescription {
-  margin: 0 0 1.2rem;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 1.1rem;
-  line-height: 1.5;
-  color: #e6dccb;
-  /* The artist's line breaks are part of the text */
-  white-space: pre-line;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: #2a2622;
 }
 
 .panelActions {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
 }
 
-.panelButton {
-  display: inline-block;
-  padding: 0.7rem 1.3rem;
-  border: 1px solid var(--color-gold);
-  background: transparent;
-  color: var(--color-ivory);
+.panelBack,
+.panelNext {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 44px;
   font-family: var(--font-sans);
-  font-size: 0.75rem;
-  letter-spacing: 0.22em;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.panelButton:hover {
-  background: var(--color-gold);
-  color: #17100a;
+.panelBack {
+  padding: 0 0.2rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
 }
 
-.panelLink {
-  font-family: var(--font-sans);
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  color: #e3cfa9;
-  text-underline-offset: 0.3em;
+.panelBack:hover {
+  color: var(--color-charcoal);
+}
+
+.panelNext {
+  padding: 0 1.3rem;
+  border: 1px solid var(--color-charcoal);
+  background: var(--color-charcoal);
+  color: var(--color-warm-white);
+}
+
+.panelNext:hover {
+  background: var(--color-walnut);
+  border-color: var(--color-walnut);
+}
+
+/* ---------- Closing card ---------- */
+
+.finale {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(1rem, 4vh, 2.5rem);
+  width: min(27rem, calc(100% - 2rem));
+  translate: -50% 0;
+  padding: 1.3rem 1.9rem 1.1rem;
+  background: var(--color-warm-white);
+  color: var(--color-charcoal);
+  text-align: center;
+  box-shadow: 0 18px 40px rgb(10 6 3 / 0.35);
+  visibility: hidden;
+  opacity: 0;
+}
+
+.finaleEyebrow {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.3em;
+  padding-left: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-brass);
+}
+
+.finaleName {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+  color: #1f1c18;
+}
+
+.finaleStatement {
+  margin: 0 auto 0.9rem;
+  max-width: 24rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #5c5247;
+}
+
+.finaleActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1.4rem;
+  flex-wrap: wrap;
 }
 
 /* ---------- Chapter navigation ---------- */
@@ -316,7 +449,6 @@
   opacity: 0;
   transform: translateX(6px);
   transition: opacity 0.25s, transform 0.25s;
-  text-shadow: 0 1px 8px rgb(0 0 0 / 0.9);
   white-space: nowrap;
 }
 
@@ -341,7 +473,7 @@
   transform: scale(1.3);
 }
 
-/* Labels appear on hover/focus only, so they never cover the painting information panel. */
+/* Labels appear on hover/focus only, so they never cover the painting label. */
 .chapterButton:hover .chapterLabel,
 .chapterButton:focus-visible .chapterLabel {
   opacity: 1;
@@ -350,22 +482,27 @@
 
 .collectionLink {
   position: absolute;
-  top: clamp(1rem, 2.5vh, 1.6rem);
-  right: clamp(1rem, 2.2vw, 2rem);
-  padding: 0.4rem 0.2rem;
+  top: max(clamp(0.75rem, 2.2vh, 1.4rem), env(safe-area-inset-top));
+  right: clamp(0.75rem, 2.2vw, 2rem);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border: 1px solid rgb(196 164 110 / 0.55);
+  /* A quiet backing keeps the link legible over the bright ivory walls */
+  background: rgb(16 12 8 / 0.5);
   font-family: var(--font-sans);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgb(244 236 223 / 0.75);
+  color: rgb(244 236 223 / 0.85);
   text-decoration: none;
-  text-shadow: 0 1px 8px rgb(0 0 0 / 0.9);
+  transition: background-color 0.2s;
 }
 
 .collectionLink:hover {
+  background: rgb(16 12 8 / 0.75);
   color: var(--color-ivory);
-  text-decoration: underline;
-  text-underline-offset: 0.35em;
 }
 
 /* ---------- Loading screen ---------- */
@@ -427,7 +564,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #cfc2ad;
 }
 
@@ -451,62 +588,96 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.9rem;
   min-height: 85vh;
   padding: 4rem 1.5rem;
   text-align: center;
   color: var(--color-ivory);
   background:
-    radial-gradient(ellipse at 50% 30%, rgb(120 82 44 / 0.35), transparent 60%),
+    radial-gradient(ellipse at 50% 30%, rgb(120 82 44 / 0.3), transparent 60%),
     var(--color-night);
+}
+
+.staticEntrance .heroRule {
+  margin: 0.6rem 0 0.4rem;
 }
 
 .staticNotice {
   max-width: 30rem;
-  margin: 2rem 0 1.75rem;
+  margin: 1.2rem 0 0.8rem;
   font-family: var(--font-sans);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   line-height: 1.6;
   color: #cfc2ad;
+}
+
+.staticEntrance .panelNext {
+  border-color: var(--color-gold);
+  background: transparent;
 }
 
 /* ---------- Narrow and portrait screens ---------- */
 
 @media (max-aspect-ratio: 17/20), (max-width: 640px) {
+  /* Bottom sheet below the painting; the camera frames the painting in the space above it */
   .panel {
     top: auto;
     right: 0.75rem;
-    bottom: 0.75rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
     left: 0.75rem;
     width: auto;
-    max-height: 44dvh;
+    max-height: 43dvh;
     margin-block: 0;
-    padding: 1.25rem 1.25rem 1.1rem;
+    padding: 1.05rem 1.25rem 0.85rem;
+    outline-offset: -6px;
+  }
+
+  .panelIndex {
+    margin-bottom: 0.6rem;
   }
 
   .panelTitle {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.45rem;
     font-size: 1.5rem;
   }
 
+  .panelLead {
+    margin-bottom: 0.4rem;
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .panelBody {
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+
+  .panelDivider {
+    margin: 0.7rem 0 0.6rem;
+  }
+
   .panelFacts {
-    margin-bottom: 0.75rem;
-    padding: 0.6rem 0;
+    gap: 0.3rem;
+    margin-bottom: 0.7rem;
   }
 
-  .panelDescription {
-    margin-bottom: 1rem;
-    font-size: 1rem;
+  .panelFact {
+    grid-template-columns: 5.6rem 1fr;
   }
 
-  /* Top right, clear of the bottom information sheet and the centred painting */
+  .panelFact dd {
+    font-size: 0.82rem;
+  }
+
+  .finale {
+    padding: 1.3rem 1.3rem 1.1rem;
+  }
+
+  /* Top right, below the collection link and clear of the centred painting */
   .chapters {
-    top: 3.25rem;
-    right: 0.4rem;
+    top: calc(max(0.75rem, env(safe-area-inset-top)) + 52px);
+    right: 0.25rem;
     transform: none;
-  }
-
-  .heroBrand {
-    transform: translateY(-13vh);
   }
 
   .chapterList {
@@ -520,6 +691,31 @@
   .chapterTrack {
     right: 0.82rem;
   }
+
+  .collectionLink {
+    font-size: 0.64rem;
+  }
+
+  .heroAttribution {
+    max-width: 22rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    padding-left: 0.2em;
+    line-height: 1.7;
+    text-wrap: balance;
+  }
+}
+
+/* Touch screens: every control at least 44 px tall */
+@media (pointer: coarse) {
+  .chapterList {
+    gap: 0;
+  }
+
+  .chapterButton {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -528,7 +724,11 @@
     animation: none;
   }
 
-  .loader {
+  .loader,
+  .chapterLabel,
+  .panelBack,
+  .panelNext,
+  .collectionLink {
     transition: none;
   }
 }

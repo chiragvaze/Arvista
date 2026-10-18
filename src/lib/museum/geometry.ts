@@ -1,4 +1,4 @@
-import { BufferAttribute, ExtrudeGeometry, Shape, type BufferGeometry, type ExtrudeGeometryOptions } from "three";
+import { BoxGeometry, BufferAttribute, ExtrudeGeometry, Shape, type BufferGeometry, type ExtrudeGeometryOptions } from "three";
 
 /**
  * Builders for the museum's architectural profiles. Shapes are drawn in the XY
@@ -92,6 +92,48 @@ export function doorLeafGeometry(opts: { halfWidth: number; spring: number; thic
   return new ExtrudeGeometry(shapeFrom(points), { depth: thickness, bevelEnabled: false, curveSegments: 1 });
 }
 
+/**
+ * The arched head panel of a door leaf: a raised panel whose top follows the
+ * doorway arch, inset from the leaf edges. Leaf-local coordinates as in
+ * doorLeafGeometry (hinge at x = 0, leaf toward `side`).
+ */
+export function doorHeadPanelGeometry(opts: {
+  halfWidth: number;
+  spring: number;
+  side: 1 | -1;
+  /** Margin from the hinge stile, the meeting stile and the arch. */
+  inset: number;
+  bottom: number;
+  depth: number;
+  bevel: number;
+}): ExtrudeGeometry {
+  const { halfWidth, spring, side, inset, bottom, depth, bevel } = opts;
+  const r = halfWidth - inset - bevel;
+  const hingeX = inset + bevel;
+  const meetX = halfWidth - inset - bevel;
+  // The top follows an arc concentric with the doorway arch (centre at x = halfWidth, y = spring).
+  const arcY = (x: number) => spring + Math.sqrt(Math.max(0, r * r - (halfWidth - x) ** 2));
+  const points: [number, number][] = [
+    [side * hingeX, bottom + bevel],
+    [side * meetX, bottom + bevel],
+    [side * meetX, arcY(meetX)],
+  ];
+  const steps = ARC_SEGMENTS / 2;
+  for (let i = 1; i < steps; i++) {
+    const x = meetX - ((meetX - hingeX) * i) / steps;
+    points.push([side * x, arcY(x)]);
+  }
+  points.push([side * hingeX, arcY(hingeX)]);
+  return new ExtrudeGeometry(shapeFrom(points), {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 3,
+    curveSegments: 1,
+  });
+}
+
 /** A rectangle with softly bevelled edges, extruded toward +Z: raised door panels, plinths. */
 export function bevelledPanelGeometry(width: number, height: number, depth: number, bevel: number): ExtrudeGeometry {
   const w = width / 2 - bevel;
@@ -116,7 +158,15 @@ export function bevelledPanelGeometry(width: number, height: number, depth: numb
  * A rectangular ring (picture frame moulding). Inner opening is width x height;
  * the moulding is `band` wide and bevelled for a rounded profile.
  */
-export function frameRingGeometry(width: number, height: number, band: number, depth: number, bevel: number): ExtrudeGeometry {
+export function frameRingGeometry(
+  width: number,
+  height: number,
+  band: number,
+  depth: number,
+  bevel: number,
+  /** Shifts the opening up (positive) inside the ring, e.g. for a bottom-weighted mat. */
+  holeOffsetY = 0,
+): ExtrudeGeometry {
   const iw = width / 2 + bevel;
   const ih = height / 2 + bevel;
   const ow = width / 2 + band - bevel;
@@ -128,10 +178,10 @@ export function frameRingGeometry(width: number, height: number, band: number, d
     [-ow, oh],
   ]);
   const hole = shapeFrom([
-    [-iw, -ih],
-    [-iw, ih],
-    [iw, ih],
-    [iw, -ih],
+    [-iw, -ih + holeOffsetY],
+    [-iw, ih + holeOffsetY],
+    [iw, ih + holeOffsetY],
+    [iw, -ih + holeOffsetY],
   ]);
   shape.holes.push(hole);
   return new ExtrudeGeometry(shape, {
@@ -151,4 +201,31 @@ export function scaleUVs(geometry: BufferGeometry, uScale: number, vScale: numbe
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * uScale, uv.getY(i) * vScale);
   uv.needsUpdate = true;
   return geometry;
+}
+
+/**
+ * A box whose UVs are in metres on every face, so a tiled material (dark
+ * marble, stone) keeps the same scale on a 45 m skirting and a 0.5 m plinth.
+ */
+export function metricBox(width: number, height: number, depth: number): BoxGeometry {
+  const g = new BoxGeometry(width, height, depth);
+  const uv = g.getAttribute("uv");
+  // BoxGeometry face order: +x, -x, +y, -y, +z, -z; 4 vertices each. [u extent, v extent] per face.
+  const extents: [number, number][] = [
+    [depth, height],
+    [depth, height],
+    [width, depth],
+    [width, depth],
+    [width, height],
+    [width, height],
+  ];
+  for (let face = 0; face < 6; face++) {
+    const [su, sv] = extents[face];
+    for (let k = 0; k < 4; k++) {
+      const i = face * 4 + k;
+      uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+    }
+  }
+  uv.needsUpdate = true;
+  return g;
 }

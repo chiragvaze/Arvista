@@ -37,7 +37,7 @@ export const DOORWAY = {
   leafThickness: 0.16,
   /** Doors are hung on the interior face of the inner facade so they swing into the building. */
   hingeZ: -INNER_FACADE.thickness,
-  maxOpenAngle: (95 * Math.PI) / 180,
+  maxOpenAngle: (92 * Math.PI) / 180,
 } as const;
 
 /** Bays: an entry bay, one bay per painting, a bay with a bench, and a final bay before the end wall. */
@@ -77,3 +77,12 @@ export const BENCH_BAY = CORRIDOR.bayCount - 2;
 
 /** Height of every frame's centre above the floor. */
 export const PAINTING_CENTER_HEIGHT = 2.4;
+
+/** Palm planters as [x, z]: either side of the doors in the portico, and in the corridor's first and last bays. */
+export const PLANTER_SPOTS: readonly [number, number][] = [
+  [-3.15, 1.25],
+  [3.15, 1.25],
+  ...[0, CORRIDOR.bayCount - 1].flatMap((bay) =>
+    [-1, 1].map((side) => [side * (CORRIDOR.halfWidth - 1.0), bayCenterZ(bay)] as [number, number]),
+  ),
+];

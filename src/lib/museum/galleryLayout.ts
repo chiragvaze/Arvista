@@ -10,39 +10,55 @@ import { CORRIDOR, PAINTING_CENTER_HEIGHT, bayCenterZ } from "./layout";
  */
 
 /** Paintings are shown larger than life so they read at corridor scale; all share one factor so relative sizes stay true. */
-export const ARTWORK_DISPLAY_SCALE = 4.2;
+export const ARTWORK_DISPLAY_SCALE = 5;
 /** Used when a painting has no physical size. */
 const DEFAULT_ARTWORK_HEIGHT = 1.6;
 
 export const FRAME_PROFILE = {
-  /** Width of the wooden moulding. */
-  moulding: 0.13,
+  /** Width of the walnut moulding. */
+  moulding: 0.15,
+  /**
+   * Mat width as a share of the artwork height for a full-size (40 cm) canvas.
+   * Smaller canvases get a proportionally wider mat (the same absolute width),
+   * so a small work reads as deliberately presented rather than enlarged.
+   */
+  matShare: 0.085,
   /** Narrowest mat allowed around the artwork. */
   minMat: 0.12,
-  /**
-   * Frames are matted up toward a common outer height, so a smaller canvas gets
-   * a wider mat instead of being enlarged to match its neighbours.
-   */
-  targetOuterHeight: 2.25,
+  /** The artwork sits slightly above centre in its mat (a classic bottom-weighted mat). */
+  matLift: 0.12,
 } as const;
+
+/** Display height of a full-size (40 cm) canvas; mats are proportioned against it. */
+const REFERENCE_ARTWORK_HEIGHT = 0.4 * ARTWORK_DISPLAY_SCALE;
 
 export interface FrameLayout {
   artWidth: number;
   artHeight: number;
   mat: number;
+  /** Vertical offset of the artwork within the mat window (positive = up). */
+  artOffsetY: number;
   outerWidth: number;
   outerHeight: number;
 }
 
 export function frameLayout(painting: Painting): FrameLayout {
-  const aspect = painting.image.width / painting.image.height;
-  const artHeight = painting.physicalSize
-    ? (painting.physicalSize.heightCm / 100) * ARTWORK_DISPLAY_SCALE
-    : DEFAULT_ARTWORK_HEIGHT;
+  const { image, physicalSize } = painting;
+  const aspect = image.width / image.height;
+  // A cropped display image shows only part of the photographed canvas, so scale by the share kept.
+  const keptHeight = image.crop ? image.crop.height / image.crop.sourceHeight : 1;
+  const artHeight = physicalSize ? (physicalSize.heightCm / 100) * ARTWORK_DISPLAY_SCALE * keptHeight : DEFAULT_ARTWORK_HEIGHT;
   const artWidth = artHeight * aspect;
-  const mat = Math.max(FRAME_PROFILE.minMat, (FRAME_PROFILE.targetOuterHeight - 2 * FRAME_PROFILE.moulding - artHeight) / 2);
+  const mat = Math.max(FRAME_PROFILE.minMat, REFERENCE_ARTWORK_HEIGHT * FRAME_PROFILE.matShare);
   const border = 2 * (mat + FRAME_PROFILE.moulding);
-  return { artWidth, artHeight, mat, outerWidth: artWidth + border, outerHeight: artHeight + border };
+  return {
+    artWidth,
+    artHeight,
+    mat,
+    artOffsetY: mat * FRAME_PROFILE.matLift,
+    outerWidth: artWidth + border,
+    outerHeight: artHeight + border,
+  };
 }
 
 export interface PaintingLayout {

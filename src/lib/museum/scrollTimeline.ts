@@ -81,6 +81,8 @@ export interface TimelineTargets {
   /** Information panels, indexed like galleryLayout. */
   panels: readonly HTMLElement[];
   progress: HTMLElement;
+  /** Closing card shown at the end of the walk. */
+  finale: HTMLElement;
   reducedMotion: boolean;
   onTime: (time: number) => void;
 }
@@ -88,12 +90,33 @@ export interface TimelineTargets {
 let registered = false;
 
 /**
+ * Cubic ease whose slope is `startSlope` at 0 and `endSlope` at 1 (in units of
+ * the segment's average speed). Adjacent segments are given matching speeds, so
+ * the camera never jumps in speed where one segment hands over to the next.
+ * Slopes are capped at 3, which keeps the curve monotonic (no backtracking).
+ */
+function matchedSpeedEase(startSlope: number, endSlope: number): (u: number) => number {
+  const a = Math.min(3, Math.max(0, startSlope));
+  const b = Math.min(3, Math.max(0, endSlope));
+  return (u) => {
+    const u2 = u * u;
+    const u3 = u2 * u;
+    return (u3 - 2 * u2 + u) * a + (-2 * u3 + 3 * u2) + (u3 - u2) * b;
+  };
+}
+
+export interface MuseumTimeline {
+  timeline: gsap.core.Timeline;
+  dispose(): void;
+}
+
+/**
  * Builds the single scrubbed timeline that drives the experience. GSAP only
  * writes plain numbers into the motion store and DOM overlay styles; the 3D
  * scene reads the store each frame, so no two systems animate the same property.
  * Scrolling backwards simply plays the timeline in reverse.
  */
-export function createMuseumTimeline(t: TimelineTargets): gsap.core.Timeline {
+export function createMuseumTimeline(t: TimelineTargets): MuseumTimeline {
   if (!registered) {
     gsap.registerPlugin(ScrollTrigger);
     ScrollTrigger.config({ ignoreMobileResize: true });
@@ -106,8 +129,9 @@ export function createMuseumTimeline(t: TimelineTargets): gsap.core.Timeline {
       trigger: t.track,
       start: "top top",
       end: "bottom bottom",
-      // A short catch-up smooths wheel steps into continuous motion; reduced motion follows the scrollbar exactly.
-      scrub: t.reducedMotion ? true : 0.9,
+      // A short catch-up turns wheel steps into continuous motion without the camera trailing the scrollbar;
+      // with reduced motion it follows the scrollbar exactly.
+      scrub: t.reducedMotion ? true : 0.6,
       onUpdate: (self) => t.onTime(self.progress * TIMELINE_LENGTH),
     },
     onUpdate: () => t.store.notify(),
@@ -128,12 +152,10 @@ export function createMuseumTimeline(t: TimelineTargets): gsap.core.Timeline {
   let waypoint = 0;
   for (const s of TIMELINE_PLAN) {
     if (s.to === undefined) continue;
-    tl.fromTo(
-      v,
-      { cameraT: waypoint },
-      { cameraT: s.to, duration: s.duration, ease: s.ease ?? "none", immediateRender: waypoint === 0 },
-      s.start,
-    );
+    // Slopes are the start/end speeds relative to the segment's average speed (length / duration).
+    const average = s.length && s.duration > 0 ? s.length / s.duration : 0;
+    const ease = average > 0 ? matchedSpeedEase((s.startSpeed ?? 0) / average, (s.endSpeed ?? 0) / average) : matchedSpeedEase(0, 0);
+    tl.fromTo(v, { cameraT: waypoint }, { cameraT: s.to, duration: s.duration, ease, immediateRender: waypoint === 0 }, s.start);
     waypoint = s.to;
   }
 
@@ -146,7 +168,48 @@ export function createMuseumTimeline(t: TimelineTargets): gsap.core.Timeline {
     tl.to(panel, { autoAlpha: 0, y: -12, duration: 0.35, ease: "power1.in" }, s.end);
   }
 
-  return tl;
+  // The closing card arrives as the camera settles before the final arch.
+  const onward = step("onward");
+  tl.fromTo(t.finale, { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.55, ease: "power1.out" }, onward.start + onward.duration * 0.55);
+
+  // When a resize changes the track's length (it is sized in viewport heights), keep the visitor at the
+  // same point of the walk instead of letting the camera jump to wherever the old pixel offset now falls.
+  // Progress is captured on the resize event itself (capture phase, before ScrollTrigger reacts): during a
+  // refresh ScrollTrigger temporarily resets its triggers, so its own progress cannot be read then.
+  let pendingProgress: number | null = null;
+  let expiry = 0;
+  const onResize = () => {
+    const st = tl.scrollTrigger;
+    if (!st || st.end <= st.start) return;
+    if (pendingProgress === null) {
+      pendingProgress = Math.min(1, Math.max(0, (window.scrollY - st.start) / (st.end - st.start)));
+    }
+    // Resizes that never lead to a refresh (e.g. a mobile address bar, ignored by design) must not
+    // leave a stale position behind for a later refresh.
+    window.clearTimeout(expiry);
+    expiry = window.setTimeout(() => (pendingProgress = null), 1500);
+  };
+  const onRefresh = () => {
+    const st = tl.scrollTrigger;
+    if (!st || pendingProgress === null) return;
+    const target = st.start + pendingProgress * (st.end - st.start);
+    pendingProgress = null;
+    window.clearTimeout(expiry);
+    if (Math.abs(window.scrollY - target) > 1) window.scrollTo(0, target);
+  };
+  window.addEventListener("resize", onResize, { capture: true });
+  ScrollTrigger.addEventListener("refresh", onRefresh);
+
+  return {
+    timeline: tl,
+    dispose() {
+      window.removeEventListener("resize", onResize, { capture: true });
+      window.clearTimeout(expiry);
+      ScrollTrigger.removeEventListener("refresh", onRefresh);
+      tl.scrollTrigger?.kill();
+      tl.kill();
+    },
+  };
 }
 
 /** Scroll offset (px) for a timeline position, used by the chapter buttons. */

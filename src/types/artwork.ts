@@ -7,11 +7,23 @@ export interface ArtworkImage {
   srcSmall?: string;
   /** The untouched source photograph. */
   original?: string;
+  /** Present when the display image is a crop of the photograph (e.g. unpainted canvas removed). */
+  crop?: ImageCrop;
   /** Pixel size of `src`; its ratio is the painting's displayed aspect ratio. */
   width: number;
   height: number;
   /** Describes what the painting depicts, for screen readers. */
   alt: string;
+}
+
+export interface ImageCrop {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  /** Pixel size of the original photograph. */
+  sourceWidth: number;
+  sourceHeight: number;
 }
 
 /** Physical size of the canvas. */
@@ -36,6 +48,8 @@ export interface Painting {
   wall?: GalleryWall;
   /** Hanging order along the corridor, starting at 1 nearest the entrance. */
   order: number;
+  /** Defaults to the gallery's artist (see content/site.ts). */
+  artist?: string;
   /** Marks example content that must be replaced with real artwork details. */
   isPlaceholder?: boolean;
 }

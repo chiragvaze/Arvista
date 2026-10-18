@@ -15,8 +15,10 @@ import {
   scrollOffsetFor,
   type Chapter,
 } from "@/lib/museum/scrollTimeline";
+import { ARTIST, GALLERY } from "@/content/site";
 import { EntranceHero } from "./overlay/EntranceHero";
 import { PaintingInformation } from "./overlay/PaintingInformation";
+import { ArtistFinale } from "./overlay/ArtistFinale";
 import { ChapterNav } from "./overlay/ChapterNav";
 import { LoadingScreen } from "./overlay/LoadingScreen";
 import styles from "./overlay/overlay.module.css";
@@ -42,6 +44,7 @@ export function MuseumExperience() {
 
   const trackRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
+  const finaleRef = useRef<HTMLElement>(null);
   const panelRefs = useRef<(HTMLElement | null)[]>([]);
   const progressRef = useRef<HTMLSpanElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
@@ -52,23 +55,24 @@ export function MuseumExperience() {
     if (mode !== "3d") return;
     const track = trackRef.current;
     const hero = heroRef.current;
+    const finale = finaleRef.current;
     const progress = progressRef.current;
     const panels = galleryLayout.map((_, i) => panelRefs.current[i]);
-    if (!track || !hero || !progress || panels.some((p) => !p)) return;
-    const tl = createMuseumTimeline({
+    if (!track || !hero || !finale || !progress || panels.some((p) => !p)) return;
+    const museum = createMuseumTimeline({
       store,
       track,
       hero,
+      finale,
       panels: panels as HTMLElement[],
       progress,
       reducedMotion,
       onTime: (time) => setChapter(chapterAt(time)),
     });
-    timelineRef.current = tl;
+    timelineRef.current = museum.timeline;
     store.notify();
     return () => {
-      tl.scrollTrigger?.kill();
-      tl.kill();
+      museum.dispose();
       timelineRef.current = null;
     };
   }, [mode, reducedMotion, store]);
@@ -98,21 +102,23 @@ export function MuseumExperience() {
     return (
       <section className={styles.staticEntrance} aria-labelledby="static-title">
         <h1 id="static-title" className={styles.heroTitle}>
-          Arvista
-          <span className={styles.heroSubtitle}>The Art Gallery</span>
+          {GALLERY.name}
+          <span className={styles.heroSubtitle}>{GALLERY.subtitle}</span>
         </h1>
         <span className={styles.heroRule} aria-hidden="true" />
-        <p className={styles.heroTagline}>Every painting tells a story.</p>
+        <p className={styles.heroAttribution}>{ARTIST.attribution}</p>
+        <p className={styles.heroTagline}>{GALLERY.tagline}</p>
         <p className={styles.staticNotice}>
           The 3D gallery could not start on this device, so the collection is shown in a simple view below.
         </p>
-        <a className={styles.panelButton} href="#collection">
-          View the collection
+        <a className={styles.panelNext} href="#collection">
+          View the collection <span aria-hidden="true">→</span>
         </a>
       </section>
     );
   }
 
+  const total = galleryLayout.length;
   return (
     <section
       ref={trackRef}
@@ -130,6 +136,8 @@ export function MuseumExperience() {
         <EntranceHero ref={heroRef} />
         {galleryLayout.map(({ painting }, i) => {
           const next = nextChapterAfter(i);
+          // Chapters are [entrance, painting 1 … painting n, next hall]; painting i is chapter i + 1.
+          const previous = CHAPTERS[i];
           return (
             <PaintingInformation
               key={painting.id}
@@ -138,11 +146,15 @@ export function MuseumExperience() {
               }}
               painting={painting}
               number={i + 1}
+              total={total}
+              previousLabel={i === 0 ? "Entrance" : "Previous"}
               continueLabel={next.id === "next-hall" ? "Continue" : "Next painting"}
+              onPrevious={() => goTo(previous.time)}
               onContinue={() => goTo(next.time)}
             />
           );
         })}
+        <ArtistFinale ref={finaleRef} />
         <ChapterNav chapters={CHAPTERS} active={chapter} onSelect={onSelectChapter} progressRef={progressRef} />
         <a className={styles.collectionLink} href="#collection">
           View collection

@@ -1,3 +1,4 @@
+import { ARTIST } from "@/content/site";
 import styles from "./overlay.module.css";
 
 /**
@@ -11,6 +12,7 @@ export function LoadingScreen({ visible, slow }: { visible: boolean; slow: boole
       <p className={styles.loaderBrand}>Arvista</p>
       <span className={styles.loaderBar} aria-hidden="true" />
       <p className={styles.loaderText}>{visible ? "Preparing the gallery…" : "Gallery ready"}</p>
+      <p className={styles.heroAttribution}>{ARTIST.attribution}</p>
       {visible && slow && (
         <p className={styles.loaderSlow}>
           This is taking longer than usual. <a href="#collection">View the collection without 3D</a>

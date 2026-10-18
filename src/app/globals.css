@@ -1,7 +1,15 @@
 :root {
+  /* ARVISTA palette */
   --color-night: #110c08;
-  --color-ivory: #f4ecdf;
-  --color-gold: #c9a46a;
+  --color-ivory: #f4f0e8;
+  --color-warm-white: #faf7f0;
+  --color-limestone: #d8ccba;
+  --color-walnut: #30231d;
+  --color-charcoal: #292723;
+  --color-brass: #a88752;
+  /* Brass lightened for text and hairlines on dark backgrounds */
+  --color-gold: #c4a46e;
+  --color-muted: #7a6e60;
 }
 
 *,

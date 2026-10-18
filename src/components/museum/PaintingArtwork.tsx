@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useLoader, useThree } from "@react-three/fiber";
 import { SRGBColorSpace, TextureLoader, type Texture } from "three";
-import { createUnavailableTexture } from "@/lib/museum/textures";
+import { createUnavailableTexture, getPrimedCanvasTexture } from "@/lib/museum/textures";
 import { FRAME_DEPTH } from "./PaintingFrame";
 import { useDisposable } from "./helpers";
 
@@ -13,24 +13,41 @@ import { useDisposable } from "./helpers";
  * unchanged. The museum lights the frame, mat and wall around it instead.
  * Without a texture it shows bare primed canvas (while loading).
  */
-export function PaintingArtwork({ width, height, texture }: { width: number; height: number; texture: Texture | null }) {
+export function PaintingArtwork({
+  width,
+  height,
+  offsetY = 0,
+  texture,
+}: {
+  width: number;
+  height: number;
+  offsetY?: number;
+  texture: Texture | null;
+}) {
   return (
-    <mesh position={[0, 0, FRAME_DEPTH.artwork]}>
+    <mesh position={[0, offsetY, FRAME_DEPTH.artwork]}>
       <planeGeometry args={[width, height]} />
-      {texture ? (
-        <meshBasicMaterial map={texture} toneMapped={false} fog={false} />
-      ) : (
-        <meshStandardMaterial color="#e4dccd" roughness={0.95} />
-      )}
+      {/* While loading, a 1 x 1 primed-canvas texture stands in, so the material (and its shader) never changes type. */}
+      <meshBasicMaterial map={texture ?? getPrimedCanvasTexture()} toneMapped={false} fog={false} />
     </mesh>
   );
 }
 
 /** Shown in place of a painting whose image failed to load. */
-export function UnavailableArtwork({ width, height, title }: { width: number; height: number; title: string }) {
+export function UnavailableArtwork({
+  width,
+  height,
+  offsetY = 0,
+  title,
+}: {
+  width: number;
+  height: number;
+  offsetY?: number;
+  title: string;
+}) {
   const texture = useDisposable(() => createUnavailableTexture(title, width / height));
   return (
-    <mesh position={[0, 0, FRAME_DEPTH.artwork]}>
+    <mesh position={[0, offsetY, FRAME_DEPTH.artwork]}>
       <planeGeometry args={[width, height]} />
       <meshStandardMaterial map={texture} roughness={0.95} />
     </mesh>
