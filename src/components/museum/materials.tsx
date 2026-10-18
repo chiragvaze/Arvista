@@ -1,25 +1,43 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { useTexture } from "@react-three/drei";
 import {
   AdditiveBlending,
   BackSide,
+  Color,
   DoubleSide,
   MeshBasicMaterial,
   MeshLambertMaterial,
   MeshStandardMaterial,
+  NoColorSpace,
+  RepeatWrapping,
+  SRGBColorSpace,
   SpriteMaterial,
+  Vector2,
   type Texture,
 } from "three";
 import { fitToMetres, type BakedLight } from "@/lib/museum/lightmaps";
-import {
-  getDetailTextures,
-  getFrondTexture,
-  getGlowTexture,
-  getSkylightTexture,
-  getSoftShadowTexture,
-  getSurfaceTextures,
-} from "@/lib/museum/textures";
+import { getDetailTextures, getFrondTexture, getGlowTexture, getSkylightTexture, getSoftShadowTexture } from "@/lib/museum/textures";
+
+/**
+ * Photographed material textures in public/textures, from ambientCG (CC0 1.0),
+ * prepared by scripts/optimize-textures.mjs. They load inside the scene's
+ * Suspense boundary, so every material is complete before shaders are
+ * compiled and the first frame is drawn.
+ */
+const TEXTURE_URLS = {
+  marbleColor: "/textures/marble-ivory-color.webp",
+  marbleRoughness: "/textures/marble-ivory-roughness.webp",
+  neroColor: "/textures/marble-nero-color.webp",
+  neroRoughness: "/textures/marble-nero-roughness.webp",
+  walnutColor: "/textures/walnut-color.webp",
+  walnutNormal: "/textures/walnut-normal.webp",
+  walnutRoughness: "/textures/walnut-roughness.webp",
+  limestoneColor: "/textures/limestone-color.webp",
+  limestoneNormal: "/textures/limestone-normal.webp",
+} as const;
+type TextureSet = Record<keyof typeof TEXTURE_URLS, Texture>;
 
 /**
  * One shared set of materials for the whole museum. Every mesh references these
@@ -31,7 +49,7 @@ export interface MuseumMaterials {
   stone: MeshStandardMaterial;
   /** Fluted limestone for pilaster shafts. */
   pilaster: MeshStandardMaterial;
-  /** Polished dark marble with fine veins: skirting, plinths, floor border. */
+  /** Polished dark marble with fine white veins: skirting, plinths, floor border. */
   darkStone: MeshStandardMaterial;
   wood: MeshStandardMaterial;
   brass: MeshStandardMaterial;
@@ -53,8 +71,8 @@ export interface MuseumMaterials {
   ceramic: MeshStandardMaterial;
   frond: MeshStandardMaterial;
   leather: MeshStandardMaterial;
-  /** Marble texture for the floor, which builds its own (optionally reflective) material. */
-  marbleMap: Texture;
+  /** Pale marble maps for the floor, which builds its own (optionally reflective) material. One repeat is one slab. */
+  floorMarble: { map: Texture; roughnessMap: Texture };
 }
 
 const MaterialsContext = createContext<MuseumMaterials | null>(null);
@@ -66,44 +84,90 @@ function repeated(texture: Texture, u: number, v: number): Texture {
   return t;
 }
 
-function createMaterials(): MuseumMaterials {
-  const tex = getSurfaceTextures();
+/**
+ * A copy of a loaded texture tiled every `metres` on geometry with metric UVs.
+ * Copies share the image on the GPU; only the UV transform differs.
+ */
+function tiled(source: Texture, metres: number, { colour = false, turn = false } = {}): Texture {
+  const t = source.clone();
+  t.wrapS = RepeatWrapping;
+  t.wrapT = RepeatWrapping;
+  t.colorSpace = colour ? SRGBColorSpace : NoColorSpace;
+  t.anisotropy = 8;
+  t.repeat.set(1 / metres, 1 / metres);
+  if (turn) {
+    // A quarter turn, so the grain runs vertically (door stiles and leaves).
+    t.center.set(0.5, 0.5);
+    t.rotation = Math.PI / 2;
+  }
+  t.needsUpdate = true;
+  return t;
+}
+
+/** A linear-space tint; components may exceed 1 to lift a texture slightly. */
+const tint = (r: number, g: number, b: number) => new Color().setRGB(r, g, b);
+
+function createMaterials(tx: TextureSet): MuseumMaterials {
   const detail = getDetailTextures();
-  // ExtrudeGeometry and the scaled plane UVs are in metres; one limestone tile spans 2.5 m.
-  const plasterMap = repeated(tex.plaster, 1 / 2.5, 1 / 2.5);
-  const plasterBump = repeated(tex.plasterBump, 1 / 1.25, 1 / 1.25);
-  const stoneMap = repeated(tex.stone, 1 / 1.2, 1 / 1.2);
-  const stoneBump = repeated(tex.plasterBump, 1 / 0.8, 1 / 0.8);
-  const woodMap = repeated(tex.wood, 1 / 1.6, 1 / 5);
-  const woodBump = repeated(tex.woodBump, 1 / 1.6, 1 / 5);
-  // Box faces carry metric UVs (see metricBox), so one repeat spans 1.2 m of dark marble.
-  const darkMarble = repeated(detail.darkMarble, 1 / 1.2, 1 / 1.2);
   const linen = repeated(detail.linen, 1 / 0.35, 1 / 0.35);
 
+  // Limestone: the plaster photograph's colour (contrast already halved) tinted ivory, with its fine relief as a
+  // normal map. One tile spans 1.6 m on the walls and 1 m on the smaller mouldings.
+  const wallColour = tiled(tx.limestoneColor, 1.6, { colour: true });
+  const wallNormal = tiled(tx.limestoneNormal, 1.6);
+  const stoneColour = tiled(tx.limestoneColor, 1.0, { colour: true });
+  const stoneNormal = tiled(tx.limestoneNormal, 1.0);
+  // Walnut: one tile is the photographed 80 cm. The doors' grain runs vertically.
+  const doorWalnut = {
+    map: tiled(tx.walnutColor, 0.8, { colour: true, turn: true }),
+    normalMap: tiled(tx.walnutNormal, 0.8, { turn: true }),
+    roughnessMap: tiled(tx.walnutRoughness, 0.8, { turn: true }),
+  };
+  const frameWalnut = {
+    map: tiled(tx.walnutColor, 0.6, { colour: true }),
+    normalMap: tiled(tx.walnutNormal, 0.6),
+    roughnessMap: tiled(tx.walnutRoughness, 0.6),
+  };
+  // Dark marble on metric-UV boxes (see metricBox and bevelledBox).
+  const neroColour = tiled(tx.neroColor, 1.0, { colour: true });
+  const neroRoughness = tiled(tx.neroRoughness, 1.0);
+
   return {
-    // Honed ivory limestone for the walls.
+    // Honed ivory limestone for the walls: a warm white, so it does not turn ochre in shadow.
     plaster: new MeshStandardMaterial({
-      color: "#f6ebda",
-      map: plasterMap,
-      bumpMap: plasterBump,
-      bumpScale: 0.08,
+      color: tint(1.07, 0.98, 0.84),
+      map: wallColour,
+      normalMap: wallNormal,
+      normalScale: new Vector2(0.35, 0.35),
       roughness: 0.86,
     }),
-    // Honed limestone for mouldings, ribs and the door surround.
-    stone: new MeshStandardMaterial({ color: "#fbf4e8", map: stoneMap, bumpMap: stoneBump, bumpScale: 0.12, roughness: 0.72 }),
-    // Five flutes across each face of the shaft (box faces have 0..1 UVs).
-    pilaster: new MeshStandardMaterial({ color: "#fbf4e8", map: stoneMap, bumpMap: detail.flutes, bumpScale: 2.2, roughness: 0.72 }),
-    darkStone: new MeshStandardMaterial({ color: "#ffffff", map: darkMarble, roughness: 0.28 }),
-    // Oiled walnut: satin, not lacquered.
-    wood: new MeshStandardMaterial({
-      color: "#eadfd4",
-      map: woodMap,
-      bumpMap: woodBump,
-      bumpScale: 0.45,
-      roughness: 0.44,
+    // Honed limestone for mouldings, ribs and the door surround: a shade lighter than the walls.
+    stone: new MeshStandardMaterial({
+      color: tint(1.12, 1.04, 0.92),
+      map: stoneColour,
+      normalMap: stoneNormal,
+      normalScale: new Vector2(0.25, 0.25),
+      roughness: 0.72,
     }),
-    // Aged brass: warm, softly brushed.
-    brass: new MeshStandardMaterial({ color: "#a88752", metalness: 1, roughness: 0.38 }),
+    // Five flutes across each face of the shaft (its box faces keep 0..1 UVs for this).
+    pilaster: new MeshStandardMaterial({
+      color: tint(1.12, 1.04, 0.92),
+      map: stoneColour,
+      bumpMap: detail.flutes,
+      bumpScale: 2.2,
+      roughness: 0.72,
+    }),
+    // Polished nero marble. Its roughness map is mirror-smooth (about 0.11), lifted to a softer polish.
+    darkStone: new MeshStandardMaterial({ map: neroColour, roughnessMap: neroRoughness, roughness: 2.2 }),
+    // Oiled walnut, satin rather than lacquered: the roughness map averages about 0.55.
+    wood: new MeshStandardMaterial({
+      color: tint(1.05, 1.0, 0.97),
+      ...doorWalnut,
+      normalScale: new Vector2(0.55, 0.55),
+      roughness: 0.92,
+    }),
+    // Antique brass: a muted, slightly brown gold, softly brushed.
+    brass: new MeshStandardMaterial({ color: "#a6834f", metalness: 1, roughness: 0.33 }),
     bronze: new MeshStandardMaterial({ color: "#2e231a", metalness: 0.85, roughness: 0.45 }),
     // Frosted glass around a warm lamp; slightly see-through so the lamp itself reads.
     lanternGlass: new MeshStandardMaterial({
@@ -135,24 +199,36 @@ function createMaterials(): MuseumMaterials {
       depthWrite: false,
     }),
     // Antique gold for the fine sight edge of the frames: warm and softly burnished, not bright yellow.
-    frameGold: new MeshStandardMaterial({ color: "#b39058", metalness: 1, roughness: 0.34 }),
-    // Dark walnut moulding, satin finish; the raised lip and inner step are a shade darker than the face.
-    frameWood: new MeshStandardMaterial({ color: "#c8a68a", map: woodMap, roughness: 0.44 }),
-    frameWoodDark: new MeshStandardMaterial({ color: "#8d6c58", map: woodMap, roughness: 0.48 }),
+    frameGold: new MeshStandardMaterial({ color: "#b08d55", metalness: 1, roughness: 0.32 }),
+    // Walnut moulding, satin finish; the raised lip and inner step are a shade darker than the broad face.
+    frameWood: new MeshStandardMaterial({
+      color: tint(1.25, 1.12, 1.02),
+      ...frameWalnut,
+      normalScale: new Vector2(0.45, 0.45),
+      roughness: 0.88,
+    }),
+    frameWoodDark: new MeshStandardMaterial({
+      color: tint(0.62, 0.55, 0.5),
+      ...frameWalnut,
+      normalScale: new Vector2(0.45, 0.45),
+      roughness: 0.92,
+    }),
     // Ivory linen mat and the paler bevelled core at its window.
     mat: new MeshStandardMaterial({ color: "#fbf7ee", map: linen, roughness: 0.97 }),
     matCore: new MeshStandardMaterial({ color: "#f8f3ea", roughness: 0.9 }),
     ceramic: new MeshStandardMaterial({ color: "#2c2622", roughness: 0.38 }),
-    // Palm fronds: a deeper, less saturated green with a slight waxy sheen, as living leaves have.
+    // Palm leaflets: deep green with a slight waxy sheen; both faces are seen.
     frond: new MeshStandardMaterial({
-      color: "#c3cdb0",
       map: getFrondTexture(),
       alphaTest: 0.5,
       side: DoubleSide,
-      roughness: 0.55,
+      roughness: 0.5,
     }),
     leather: new MeshStandardMaterial({ color: "#3a271d", roughness: 0.5 }),
-    marbleMap: tex.marble,
+    floorMarble: {
+      map: tiled(tx.marbleColor, 1, { colour: true }),
+      roughnessMap: tiled(tx.marbleRoughness, 1),
+    },
   };
 }
 
@@ -173,8 +249,8 @@ export function bakedStoneMaterial(
   const material = new MeshLambertMaterial({
     color: source.color,
     map: source.map,
-    bumpMap: relief?.bumpMap ?? source.bumpMap,
-    bumpScale: relief?.bumpScale ?? source.bumpScale,
+    // A relief map (the vault's coffers) replaces the stone's own fine normal map: three uses one or the other.
+    ...(relief ? { bumpMap: relief.bumpMap, bumpScale: relief.bumpScale } : { normalMap: source.normalMap, normalScale: source.normalScale }),
     side: source.side,
     lightMap: fitToMetres(baked.light, fit.width, fit.height, fit.u0, fit.v0),
     lightMapIntensity: lightIntensity,
@@ -190,15 +266,21 @@ export function bakedStoneMaterial(
 }
 
 export function MaterialsProvider({ children }: { children: ReactNode }) {
-  const materials = useMemo(() => createMaterials(), []);
+  const textures = useTexture(TEXTURE_URLS) as TextureSet;
+  const materials = useMemo(() => createMaterials(textures), [textures]);
   useEffect(
     () => () => {
-      for (const value of Object.values(materials) as (MeshStandardMaterial | MeshBasicMaterial | SpriteMaterial | Texture)[]) {
+      for (const value of Object.values(materials)) {
         if (value instanceof MeshStandardMaterial) {
-          value.map?.dispose();
-          value.bumpMap?.dispose();
+          // The tiled copies; the loaded originals stay in drei's texture cache.
+          [value.map, value.bumpMap, value.normalMap, value.roughnessMap].forEach((t) => t?.dispose());
+          value.dispose();
+        } else if ("dispose" in value) {
+          value.dispose();
+        } else {
+          value.map.dispose();
+          value.roughnessMap.dispose();
         }
-        value.dispose();
       }
     },
     [materials],

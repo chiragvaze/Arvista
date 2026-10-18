@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   BackSide,
   BoxGeometry,
@@ -17,6 +18,7 @@ import { archBandGeometry, archedWallGeometry, bevelledBox, metricBox, scaleUVs,
 import { bakeCorridorWall, bakeEndWall, bakeVault, bakeVaultRelief, fitToMetres, CORRIDOR_LENGTH } from "@/lib/museum/lightmaps";
 import { createNicheTextures } from "@/lib/museum/textures";
 import { bakedStoneMaterial, useMuseumMaterials } from "./materials";
+import { useStoneFill } from "./ReflectionProbe";
 import { BevelledBox, InstancedParts, useDisposable, type InstanceTransform } from "./helpers";
 import { Planter } from "./Planter";
 import { FloorInlay, type InlayStrip } from "./FloorInlay";
@@ -30,6 +32,9 @@ const END_WALL_HEIGHT = H + VAULT_RADIUS + 0.2;
 
 const DIVIDERS = bayDividerZs();
 const BAYS = Array.from({ length: CORRIDOR.bayCount }, (_, i) => bayCenterZ(i));
+
+/** Strength of the soft fill on the corridor's stone (see useStoneFill). */
+const STONE_FILL_INTENSITY = 0.42;
 
 /** Dark marble baseboard with a limestone cap, as in the reference walls. */
 const BASEBOARD = { height: 0.42, depth: 0.07, cap: 0.05 } as const;
@@ -54,6 +59,8 @@ function onEndPilasters(out: number, y: number): InstanceTransform[] {
 const RIBS: InstanceTransform[] = DIVIDERS.map((z) => ({ position: [0, 0, z - 0.25] }));
 const SKYLIGHTS: InstanceTransform[] = BAYS.map((z) => ({ position: [0, H, z] }));
 const PILASTERS = [...onBothWalls(0.11, H / 2), ...onEndPilasters(0.11, H / 2)];
+/** A necking band (astragal) between each shaft and its capital, so the capital reads as carved rather than a block. */
+const NECKINGS = [...onBothWalls(0.125, H - 0.475), ...onEndPilasters(0.125, H - 0.475)];
 const CAPITALS = [...onBothWalls(0.17, H - 0.29), ...onEndPilasters(0.17, H - 0.29)];
 const ABACI = [...onBothWalls(0.2, H - 0.08), ...onEndPilasters(0.2, H - 0.08)];
 const PLINTHS = [...onBothWalls(0.18, 0.23), ...onEndPilasters(0.18, 0.23)];
@@ -200,7 +207,8 @@ export function GalleryCorridor() {
     // dark-marble plinths and baseboard keep crisp arrises and metric UVs.
     const geometries = {
       // Shaded toward the floor like the wall behind it (see the walls' baked contact shadows).
-      pilaster: withBaseShading(bevelledBox(0.22, H, 0.62, 0.025), 0.62, 2.6),
+      pilaster: withBaseShading(bevelledBox(0.22, H, 0.62, 0.025, { faceUVs: true }), 0.62, 2.6),
+      necking: bevelledBox(0.25, 0.05, 0.7, 0.015),
       capital: bevelledBox(0.34, 0.32, 0.82, 0.03),
       abacus: bevelledBox(0.4, 0.1, 0.94, 0.02),
       plinth: metricBox(0.36, 0.46, 0.88),
@@ -215,6 +223,7 @@ export function GalleryCorridor() {
       baseboard: metricBox(BASEBOARD.depth, BASEBOARD.height, LENGTH),
       baseboardCap: bevelledBox(BASEBOARD.depth + 0.035, BASEBOARD.cap, LENGTH, 0.015),
       fascia: bevelledBox(0.14, 0.42, LENGTH, 0.02),
+      bed: bevelledBox(0.19, 0.06, LENGTH, 0.02),
       crown: bevelledBox(0.42, 0.2, LENGTH, 0.03),
     };
     return { ...geometries, dispose: () => Object.values(geometries).forEach((g) => g.dispose()) };
@@ -288,11 +297,34 @@ export function GalleryCorridor() {
     const endLit = bakedStoneMaterial(m.plaster, bakeEndWall(ARCH, END_WALL_HEIGHT), { width: W * 2, height: END_WALL_HEIGHT, u0: -W }, 2.6);
     const lunette = m.skylight.clone();
     lunette.side = FrontSide;
+    // The corridor's own stone, lit by the interior fill below; the entrance keeps the dusk-lit original.
+    const stone = m.stone.clone();
     const pilaster = m.pilaster.clone();
     pilaster.vertexColors = true;
-    const all = [left, right, vaultBase, trim, vaultLit, endLit, lunette, pilaster];
-    return { left, right, vault: vaultLit, trim, endWall: endLit, lunette, pilaster, dispose: () => all.forEach((x) => x.dispose()) };
+    const all = [left, right, vaultBase, trim, vaultLit, endLit, lunette, stone, pilaster];
+    return {
+      left,
+      right,
+      vault: vaultLit,
+      trim,
+      endWall: endLit,
+      lunette,
+      stone,
+      pilaster,
+      dispose: () => all.forEach((x) => x.dispose()),
+    };
   });
+  // Mouldings, pilasters, ribs and skylight frames have no baked light, so they take a soft fill from above
+  // (see useStoneFill): their top faces catch it and their undersides stay in shade.
+  const stoneFill = useMemo(
+    (): [MeshStandardMaterial, number][] => [
+      [surfaces.stone, STONE_FILL_INTENSITY],
+      [surfaces.pilaster, STONE_FILL_INTENSITY],
+      [surfaces.trim, STONE_FILL_INTENSITY],
+    ],
+    [surfaces],
+  );
+  useStoneFill(stoneFill);
 
   const hallZ = CORRIDOR.endZ - END_WALL_THICKNESS;
   // Two lights along the corridor give the pilasters, cornice and mouldings their modelling (the walls' and
@@ -307,30 +339,33 @@ export function GalleryCorridor() {
       <mesh geometry={wall} material={surfaces.right} position={[W, H / 2, MID_Z]} rotation={[0, -Math.PI / 2, 0]} receiveShadow />
       <mesh geometry={vault} material={surfaces.vault} position={[0, H, MID_Z]} />
 
-      <InstancedParts geometry={rib} material={m.stone} transforms={RIBS} />
+      <InstancedParts geometry={rib} material={surfaces.stone} transforms={RIBS} />
       <InstancedParts geometry={skylight} material={m.skylight} transforms={SKYLIGHTS} />
       <InstancedParts geometry={glazing.end} material={surfaces.trim} transforms={SKYLIGHT_ENDS} reflected={false} />
       <InstancedParts geometry={glazing.left} material={surfaces.trim} transforms={SKYLIGHTS} reflected={false} />
       <InstancedParts geometry={glazing.right} material={surfaces.trim} transforms={SKYLIGHTS} reflected={false} />
 
       <InstancedParts geometry={pieces.pilaster} material={surfaces.pilaster} transforms={PILASTERS} receiveShadow />
-      <InstancedParts geometry={pieces.capital} material={m.stone} transforms={CAPITALS} />
-      <InstancedParts geometry={pieces.abacus} material={m.stone} transforms={ABACI} />
+      <InstancedParts geometry={pieces.necking} material={surfaces.stone} transforms={NECKINGS} reflected={false} />
+      <InstancedParts geometry={pieces.capital} material={surfaces.stone} transforms={CAPITALS} />
+      <InstancedParts geometry={pieces.abacus} material={surfaces.stone} transforms={ABACI} />
       <InstancedParts geometry={pieces.plinth} material={m.darkStone} transforms={PLINTHS} />
-      <InstancedParts geometry={pieces.base} material={m.stone} transforms={BASES} />
-      <InstancedParts geometry={pieces.baseTop} material={m.stone} transforms={BASE_TOPS} />
+      <InstancedParts geometry={pieces.base} material={surfaces.stone} transforms={BASES} />
+      <InstancedParts geometry={pieces.baseTop} material={surfaces.stone} transforms={BASE_TOPS} />
 
-      <InstancedParts geometry={pieces.bandRail} material={m.stone} transforms={PANEL_PARTS.bandRails} />
-      <InstancedParts geometry={pieces.beadRail} material={m.stone} transforms={PANEL_PARTS.beadRails} />
-      <InstancedParts geometry={pieces.bandStile} material={m.stone} transforms={PANEL_PARTS.bandStiles} />
-      <InstancedParts geometry={pieces.beadStile} material={m.stone} transforms={PANEL_PARTS.beadStiles} />
-      <InstancedParts geometry={pieces.dentil} material={m.stone} transforms={DENTILS} reflected={false} />
+      <InstancedParts geometry={pieces.bandRail} material={surfaces.stone} transforms={PANEL_PARTS.bandRails} />
+      <InstancedParts geometry={pieces.beadRail} material={surfaces.stone} transforms={PANEL_PARTS.beadRails} />
+      <InstancedParts geometry={pieces.bandStile} material={surfaces.stone} transforms={PANEL_PARTS.bandStiles} />
+      <InstancedParts geometry={pieces.beadStile} material={surfaces.stone} transforms={PANEL_PARTS.beadStiles} />
+      <InstancedParts geometry={pieces.dentil} material={surfaces.stone} transforms={DENTILS} reflected={false} />
 
       {[-1, 1].map((side) => (
         <group key={side}>
-          {/* Cornice at the springing line: a flat fascia below a projecting crown that hides the cove light. */}
-          <mesh geometry={pieces.fascia} material={m.stone} position={[side * (W - 0.07), H - 0.25, MID_Z]} />
-          <mesh geometry={pieces.crown} material={m.stone} position={[side * (W - 0.21), H + 0.06, MID_Z]} />
+          {/* Cornice at the springing line: a bed moulding casting a crisp shadow line, a flat fascia, and a
+              projecting crown that hides the cove light. */}
+          <mesh geometry={pieces.bed} material={surfaces.stone} position={[side * (W - 0.095), H - 0.49, MID_Z]} />
+          <mesh geometry={pieces.fascia} material={surfaces.stone} position={[side * (W - 0.07), H - 0.25, MID_Z]} />
+          <mesh geometry={pieces.crown} material={surfaces.stone} position={[side * (W - 0.21), H + 0.06, MID_Z]} />
           {/* Dark marble baseboard with a limestone cap */}
           <mesh
             geometry={pieces.baseboard}
@@ -340,7 +375,7 @@ export function GalleryCorridor() {
           />
           <mesh
             geometry={pieces.baseboardCap}
-            material={m.stone}
+            material={surfaces.stone}
             position={[side * (W - (BASEBOARD.depth + 0.035) / 2), BASEBOARD.height + BASEBOARD.cap / 2, MID_Z]}
           />
         </group>
@@ -350,7 +385,7 @@ export function GalleryCorridor() {
       {lightZs.map((z) => (
         // Hung high in the vault: the light grazes the walls from above, so it models the pilasters, cornice and
         // mouldings and falls off down the wall, rather than flooding the wall faces evenly.
-        <pointLight key={z} position={[0, H + 0.8, z]} color="#ffdfb8" intensity={26} distance={30} decay={2} />
+        <pointLight key={z} position={[0, H + 0.8, z]} color="#ffe5cc" intensity={26} distance={30} decay={2} />
       ))}
 
       {/* Palms in the entry bay and the last bay, clear of the paintings. */}
@@ -362,26 +397,29 @@ export function GalleryCorridor() {
       {/* End wall: a stone archway framed by fluted pilasters, with the corridor cornice carried across above it
           and a glazed lunette in the end of the vault. Its lit face is group 0 (the caps) of the extruded wall. */}
       <mesh geometry={endWall} material={[surfaces.endWall, m.plaster]} position={[0, 0, hallZ]} receiveShadow />
-      <mesh geometry={endArch.archivolt} material={m.stone} position={[0, 0, CORRIDOR.endZ]} />
-      <mesh geometry={endArch.outer} material={m.stone} position={[0, 0, CORRIDOR.endZ]} />
-      <mesh geometry={endArch.reveal} material={m.stone} position={[0, 0, hallZ - 0.01]} />
+      <mesh geometry={endArch.archivolt} material={surfaces.stone} position={[0, 0, CORRIDOR.endZ]} />
+      <mesh geometry={endArch.outer} material={surfaces.stone} position={[0, 0, CORRIDOR.endZ]} />
+      <mesh geometry={endArch.reveal} material={surfaces.stone} position={[0, 0, hallZ - 0.01]} />
       {/* Keystone, rising to meet the cornice */}
-      <mesh material={m.stone} position={[0, ARCH.spring + ARCH.halfWidth + 0.3, CORRIDOR.endZ + 0.13]}>
+      <mesh material={surfaces.stone} position={[0, ARCH.spring + ARCH.halfWidth + 0.3, CORRIDOR.endZ + 0.13]}>
         <BevelledBox args={[0.5, 0.82, 0.28]} radius={0.03} />
       </mesh>
       {/* The cornice across the end wall butts against the side walls' cornices rather than overlapping them,
           so no two faces share a plane in the corners. */}
-      <mesh material={m.stone} position={[0, H - 0.25, CORRIDOR.endZ + 0.07]}>
+      <mesh material={surfaces.stone} position={[0, H - 0.49, CORRIDOR.endZ + 0.095]}>
+        <BevelledBox args={[W * 2 - 0.38, 0.06, 0.19]} radius={0.02} />
+      </mesh>
+      <mesh material={surfaces.stone} position={[0, H - 0.25, CORRIDOR.endZ + 0.07]}>
         <BevelledBox args={[W * 2 - 0.28, 0.42, 0.14]} radius={0.02} />
       </mesh>
-      <mesh material={m.stone} position={[0, H + 0.06, CORRIDOR.endZ + 0.21]}>
+      <mesh material={surfaces.stone} position={[0, H + 0.06, CORRIDOR.endZ + 0.21]}>
         <BevelledBox args={[W * 2 - 0.84, 0.2, 0.42]} radius={0.03} />
       </mesh>
-      <mesh geometry={endArch.lunetteBand} material={m.stone} position={[0, 0, CORRIDOR.endZ]} />
+      <mesh geometry={endArch.lunetteBand} material={surfaces.stone} position={[0, 0, CORRIDOR.endZ]} />
       <mesh geometry={endArch.lunette} material={surfaces.lunette} position={[0, LUNETTE.y, CORRIDOR.endZ + 0.01]} />
       {[-1, 1].map((side) => (
         <group key={side}>
-          <mesh material={m.stone} position={[side * (ARCH.halfWidth + 0.21), ARCH.spring - 0.1, CORRIDOR.endZ + 0.11]}>
+          <mesh material={surfaces.stone} position={[side * (ARCH.halfWidth + 0.21), ARCH.spring - 0.1, CORRIDOR.endZ + 0.11]}>
             <BevelledBox args={[0.62, 0.2, 0.26]} radius={0.025} />
           </mesh>
           <mesh material={m.darkStone} position={[side * (ARCH.halfWidth + 0.21), 0.26, CORRIDOR.endZ + 0.1]}>
@@ -395,7 +433,7 @@ export function GalleryCorridor() {
             <boxGeometry args={[END_BASEBOARD.to - END_BASEBOARD.from, BASEBOARD.height, BASEBOARD.depth]} />
           </mesh>
           <mesh
-            material={m.stone}
+            material={surfaces.stone}
             position={[(side * (END_BASEBOARD.from + END_BASEBOARD.to)) / 2, BASEBOARD.height + BASEBOARD.cap / 2, CORRIDOR.endZ + 0.05]}
           >
             <BevelledBox args={[END_BASEBOARD.to - END_BASEBOARD.from, BASEBOARD.cap, 0.1]} radius={0.015} />
@@ -405,7 +443,7 @@ export function GalleryCorridor() {
       <mesh material={m.darkStone} position={[0, 0.015, hallZ + END_WALL_THICKNESS / 2]} receiveShadow>
         <boxGeometry args={[ARCH.halfWidth * 2, 0.03, END_WALL_THICKNESS]} />
       </mesh>
-      <Apse z={hallZ} />
+      <Apse z={hallZ} stone={surfaces.stone} />
     </group>
   );
 }
@@ -448,7 +486,7 @@ const BENCH_LEGS: InstanceTransform[] = [-1, 1].flatMap((x) => [-1, 1].map((z) =
  */
 const APSE = { halfWidth: 2.8, vestibule: 2.6, spring: 4.4 } as const;
 
-function Apse({ z }: { z: number }) {
+function Apse({ z, stone }: { z: number; stone: MeshStandardMaterial }) {
   const m = useMuseumMaterials();
   const parts = useDisposable(() => {
     const textures = createNicheTextures();
@@ -468,7 +506,7 @@ function Apse({ z }: { z: number }) {
       dome: new MeshBasicMaterial({ map: textures.dome, side: BackSide }),
       left: new MeshBasicMaterial({ map: textures.side }),
       right: new MeshBasicMaterial({ map: sideMirrored }),
-      ceiling: new MeshBasicMaterial({ color: "#6f5a45" }),
+      ceiling: new MeshBasicMaterial({ color: "#857260" }),
     };
     const all = [wall, dome, side, ceiling, ...Object.values(materials)];
     return {
@@ -509,11 +547,11 @@ function Apse({ z }: { z: number }) {
       <mesh material={m.darkStone} position={[0, 0.06, center - 0.9]}>
         <boxGeometry args={[1.12, 0.12, 1.12]} />
       </mesh>
-      <mesh material={m.stone} position={[0, 0.56, center - 0.9]}>
-        <boxGeometry args={[0.95, 0.88, 0.95]} />
+      <mesh material={stone} position={[0, 0.56, center - 0.9]}>
+        <BevelledBox args={[0.95, 0.88, 0.95]} radius={0.02} />
       </mesh>
-      <mesh material={m.stone} position={[0, 1.04, center - 0.9]}>
-        <boxGeometry args={[1.08, 0.08, 1.08]} />
+      <mesh material={stone} position={[0, 1.04, center - 0.9]}>
+        <BevelledBox args={[1.08, 0.08, 1.08]} radius={0.02} />
       </mesh>
       <Planter position={[0, 1.08, center - 0.9]} seed={7} scale={1.05} />
     </group>

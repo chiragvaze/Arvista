@@ -237,9 +237,36 @@ export function metricBox(width: number, height: number, depth: number): BoxGeom
  * much of what makes a moulding read as carved rather than computer-drawn.
  * One segment per edge keeps it to 108 triangles.
  */
-export function bevelledBox(width: number, height: number, depth: number, radius = 0.015): BufferGeometry {
+export function bevelledBox(width: number, height: number, depth: number, radius = 0.015, { faceUVs = false } = {}): BufferGeometry {
   const r = Math.min(radius, Math.min(width, height, depth) / 2 - 1e-4);
-  return new RoundedBoxGeometry(width, height, depth, 1, r);
+  const geometry = new RoundedBoxGeometry(width, height, depth, 1, r);
+  return faceUVs ? geometry : boxProjectUVs(geometry);
+}
+
+/**
+ * Replaces a box-like geometry's UVs with metric ones projected along each
+ * vertex's dominant normal axis, so a tiled stone or marble texture keeps the
+ * same scale on a 10 cm block and on a 45 m cornice. (Per-face 0..1 UVs would
+ * stretch it across every face.)
+ */
+export function boxProjectUVs<T extends BufferGeometry>(geometry: T): T {
+  const position = geometry.getAttribute("position");
+  const normal = geometry.getAttribute("normal");
+  const uv = geometry.getAttribute("uv");
+  for (let i = 0; i < position.count; i++) {
+    const nx = Math.abs(normal.getX(i));
+    const ny = Math.abs(normal.getY(i));
+    const nz = Math.abs(normal.getZ(i));
+    const [u, v] =
+      nx >= ny && nx >= nz
+        ? [position.getZ(i), position.getY(i)]
+        : ny >= nz
+          ? [position.getX(i), position.getZ(i)]
+          : [position.getX(i), position.getY(i)];
+    uv.setXY(i, u, v);
+  }
+  uv.needsUpdate = true;
+  return geometry;
 }
 
 /**

@@ -21,24 +21,33 @@ const URN_PROFILE: [number, number][] = [
   [0.0, 1.03],
 ];
 const RIM = 1.02;
-const FROND_COUNT = 34;
+/** A kentia palm: a few upright young fronds at the centre and longer ones arching out around them. */
+const FROND_COUNT = 18;
+const FROND = { width: 0.86, length: 1.45 } as const;
 
 /**
- * A dark glazed ceramic urn with an arching palm. The fronds are one instanced
- * mesh, so a planter costs three draw calls however many leaves it has.
+ * A dark glazed ceramic urn with a kentia palm. The fronds are one instanced
+ * mesh, so a planter costs three draw calls however many fronds it has.
  */
 export function Planter({ position, seed, scale = 1 }: { position: [number, number, number]; seed: number; scale?: number }) {
   const m = useMuseumMaterials();
   const urn = useDisposable(() => new LatheGeometry(URN_PROFILE.map(([x, y]) => new Vector2(x, y)), 32));
   const frond = useDisposable(() => {
-    const g = new PlaneGeometry(0.52, 1.65, 1, 10);
-    g.translate(0, 0.825, 0);
+    const { width, length } = FROND;
+    const g = new PlaneGeometry(width, length, 4, 16);
+    g.translate(0, length / 2, 0);
     const pos = g.getAttribute("position");
-    // Arch each frond outward and let its tip droop.
     for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
       const y = pos.getY(i);
-      pos.setZ(i, y * y * 0.36);
-      pos.setY(i, y - y * y * 0.2);
+      const t = y / length;
+      const side = Math.abs(x) / (width / 2);
+      // The frond arches outward (+z, which faces out and down once tilted) and shortens as it bends; the
+      // leaflets fold down from the midrib into a shallow V, drooping more toward the tip.
+      const arch = t * t * length * 0.55;
+      const droop = side * 0.2 * (0.35 + t) + side * side * 0.1;
+      pos.setZ(i, arch + droop);
+      pos.setY(i, y - t * t * length * 0.12);
     }
     g.computeVertexNormals();
     return g;
@@ -48,9 +57,11 @@ export function Planter({ position, seed, scale = 1 }: { position: [number, numb
     const items: InstanceTransform[] = [];
     for (let i = 0; i < FROND_COUNT; i++) {
       const angle = i * 2.39996 + seed;
-      const tilt = 0.18 + (i % 4) * 0.16;
-      const s = 0.75 + ((i * 37) % 10) / 22;
-      items.push({ position: [0, RIM, 0], rotation: [tilt, angle, 0], scale: [s, s, s] });
+      // The first few are young fronds standing nearly upright; the rest arch out progressively further.
+      const young = i < 4;
+      const tilt = young ? 0.12 + i * 0.06 : 0.4 + ((i * 7) % 11) * 0.055;
+      const s = young ? 0.72 + i * 0.05 : 0.85 + ((i * 37) % 10) / 30;
+      items.push({ position: [0, RIM - 0.02, 0], rotation: [tilt, angle, 0], scale: [s, s, s] });
     }
     return items;
   }, [seed]);

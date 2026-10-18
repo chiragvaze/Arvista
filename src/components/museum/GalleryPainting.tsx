@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense } from "react";
 import type { QualityTier } from "@/lib/museum/deviceTier";
 import type { PaintingLayout } from "@/lib/museum/galleryLayout";
 import { CORRIDOR, PAINTING_CENTER_HEIGHT } from "@/lib/museum/layout";
@@ -8,7 +7,7 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { AimedSpotLight, NotReflected } from "./helpers";
 import { useMuseumMaterials } from "./materials";
 import { PaintingFrame } from "./PaintingFrame";
-import { PaintingArtwork, UnavailableArtwork, useArtworkTexture } from "./PaintingArtwork";
+import { PaintingArtwork, UnavailableArtwork } from "./PaintingArtwork";
 
 /**
  * Picture light, in the painting's local space (+Z points into the corridor):
@@ -42,18 +41,11 @@ export function GalleryPainting({ layout, quality }: { layout: PaintingLayout; q
       </NotReflected>
       <PaintingFrame frame={frame} castShadow={false} />
       <ErrorBoundary fallback={<UnavailableArtwork width={w} height={h} offsetY={y} title={painting.title} />}>
-        <Suspense fallback={<PaintingArtwork width={w} height={h} offsetY={y} texture={null} />}>
-          <LoadedArtwork src={src} width={w} height={h} offsetY={y} />
-        </Suspense>
+        <PaintingArtwork src={src} width={w} height={h} offsetY={y} />
       </ErrorBoundary>
       <PictureLight />
     </group>
   );
-}
-
-function LoadedArtwork({ src, width, height, offsetY }: { src: string; width: number; height: number; offsetY: number }) {
-  const texture = useArtworkTexture(src);
-  return <PaintingArtwork width={width} height={height} offsetY={offsetY} texture={texture} />;
 }
 
 function PictureLight() {

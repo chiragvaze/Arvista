@@ -24,7 +24,8 @@ export function MuseumScene({ store, quality }: { store: MotionStore; quality: Q
       <color attach="background" args={[NIGHT]} />
       <fog attach="fog" args={[NIGHT, 34, 95]} />
 
-      {/* Soft image-based fill rendered once from a few warm light panels — no HDR download. */}
+      {/* Soft image-based fill rendered once from a few warm light panels — no HDR download. It lights the
+          dusk-lit exterior stone, the mats and the palms; the corridor's stone has its own fill (useStoneFill). */}
       <Environment resolution={64} frames={1} environmentIntensity={0.22}>
         <Lightformer form="rect" intensity={2.2} color="#ffe2b8" scale={[20, 6, 1]} position={[0, 9, 0]} rotation={[Math.PI / 2, 0, 0]} />
         <Lightformer form="rect" intensity={0.8} color="#ffcf98" scale={[10, 4, 1]} position={[-8, 3, 0]} rotation={[0, Math.PI / 2, 0]} />
@@ -33,10 +34,10 @@ export function MuseumScene({ store, quality }: { store: MotionStore; quality: Q
         {/* Light bounced up from the pale marble floor */}
         <Lightformer form="rect" intensity={0.55} color="#e6d3b4" scale={[20, 20, 1]} position={[0, -3, 0]} rotation={[-Math.PI / 2, 0, 0]} />
       </Environment>
-      {/* Sky: warm ceiling light. Ground: the warm bounce from the cream marble floor, which keeps the undersides
-          of mouldings, cornices and dentils from falling to black. Kept low: the walls and vault get their soft
-          light from baked light maps, so the fill no longer flattens the modelling. */}
-      <hemisphereLight args={["#ffe8cc", "#9a8162", 0.14]} />
+      {/* Sky: warm-white ceiling light. Ground: the bounce from the cream marble floor, which keeps the undersides
+          of mouldings, cornices and dentils from falling to black. Kept low and only slightly warm: the walls and
+          vault get their soft light from baked light maps, and an amber fill turns every shadow orange. */}
+      <hemisphereLight args={["#fff0e0", "#a08f7a", 0.14]} />
 
       {/* Warm downlight from above the portico, washing the doors and the carved inscription above them. */}
       <AimedSpotLight

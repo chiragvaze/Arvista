@@ -188,7 +188,7 @@ export function Entrance() {
           {/* Pilasters flanking the doorway carry the lanterns, as in a classical portal. */}
           <group position={[side * PORTAL_PILASTER.x, 0, 0]}>
             <mesh material={m.pilaster} position={[0, PORTAL_PILASTER.top / 2, PORTAL_PILASTER.depth / 2]} receiveShadow>
-              <BevelledBox args={[PORTAL_PILASTER.width, PORTAL_PILASTER.top, PORTAL_PILASTER.depth]} />
+              <BevelledBox args={[PORTAL_PILASTER.width, PORTAL_PILASTER.top, PORTAL_PILASTER.depth]} faceUVs />
             </mesh>
             <mesh material={m.darkStone} position={[0, 0.22, PORTAL_PILASTER.depth / 2 + 0.03]}>
               <BevelledBox args={[PORTAL_PILASTER.width + 0.16, 0.44, PORTAL_PILASTER.depth + 0.08]} />

@@ -30,9 +30,15 @@ import {
 
 type RGB = readonly [number, number, number];
 
-const WARM: RGB = [1, 0.84, 0.64];
-const SOFT_WARM: RGB = [1, 0.88, 0.72];
+// Interior light is a warm white rather than amber: the limestone's own ivory supplies the rest of the warmth,
+// so its shadows stay a warm grey instead of turning orange-brown under the tone mapping.
+const WARM: RGB = [1, 0.86, 0.68];
+const SOFT_WARM: RGB = [1, 0.88, 0.75];
+/** The lanterns and portico light outside, at dusk: deliberately more golden than the galleries. */
+const DUSK_WARM: RGB = [1, 0.84, 0.64];
 const DAYLIGHT: RGB = [0.93, 0.95, 0.98];
+/** Faint ambient left in the corridor's shadows: 8-bit values chosen so they keep this hue (12, 11, 10). */
+const INTERIOR_AMBIENT: RGB = [0.047, 0.043, 0.039];
 
 /**
  * Paints light and occlusion onto a rectangle of surface measured in metres
@@ -224,15 +230,16 @@ export interface WallPanels {
 export function bakeCorridorWall(side: -1 | 1, panels: WallPanels): BakedLight {
   const u = (z: number) => (side < 0 ? CORRIDOR.startZ - z : z - CORRIDOR.endZ);
   // 59 px per metre up the wall: enough for the few-centimetre contact shadows under the mouldings.
-  const p = new SurfacePainter(CORRIDOR_LENGTH, H, 2048, 384, [0.045, 0.04, 0.032]);
+  const p = new SurfacePainter(CORRIDOR_LENGTH, H, 2048, 384, INTERIOR_AMBIENT);
   for (let bay = 0; bay < CORRIDOR.bayCount; bay++) {
     const z = bayCenterZ(bay);
     const painting = galleryLayout.find((l) => l.bay === bay && l.side === side);
     if (painting) {
-      // The picture light's pool: a broad warm field around the frame, brightest just above its centre.
+      // The picture light's pool: a soft field around the frame, brightest just above its centre, and a tighter
+      // core, so the light gathers on the painting and falls away across the panel rather than flooding the bay.
       const { outerWidth, outerHeight } = painting.frame;
-      p.pool(u(z), PAINTING_CENTER_HEIGHT + 0.3, outerWidth / 2 + 1.5, outerHeight / 2 + 1.3, WARM, 0.74);
-      p.pool(u(z), PAINTING_CENTER_HEIGHT + 0.15, outerWidth / 2 + 0.5, outerHeight / 2 + 0.4, WARM, 0.26);
+      p.pool(u(z), PAINTING_CENTER_HEIGHT + 0.35, outerWidth / 2 + 1.25, outerHeight / 2 + 1.1, WARM, 0.6);
+      p.pool(u(z), PAINTING_CENTER_HEIGHT + 0.15, outerWidth / 2 + 0.45, outerHeight / 2 + 0.4, WARM, 0.36);
     } else {
       // A wall washer hidden in the cornice: a scallop of light fanning down from the top of the wall.
       p.pool(u(z), H + 0.4, 1.6, 4.4, SOFT_WARM, 0.7);
@@ -345,7 +352,7 @@ export function bakeVaultRelief(skylight: VaultSkylight): Texture {
 export function bakeVault(skylightZs: readonly number[], skylight: VaultSkylight): BakedLight {
   const arc = VAULT_ARC;
   const v = vaultV;
-  const p = new SurfacePainter(arc, CORRIDOR_LENGTH, 256, 1024, [0.06, 0.055, 0.048]);
+  const p = new SurfacePainter(arc, CORRIDOR_LENGTH, 256, 1024, [0.059, 0.055, 0.051]);
   // Cove light hidden on top of the cornice, washing up the lower vault from both sides.
   p.bandX(0, 3.4, 0, CORRIDOR_LENGTH, SOFT_WARM, 0.7);
   p.bandX(arc, arc - 3.4, 0, CORRIDOR_LENGTH, SOFT_WARM, 0.7);
@@ -372,9 +379,9 @@ export function bakeVault(skylightZs: readonly number[], skylight: VaultSkylight
 
 /** The end wall around the final archway; x is measured from the left corridor wall. */
 export function bakeEndWall(arch: { halfWidth: number; spring: number }, height: number): BakedLight {
-  const p = new SurfacePainter(W * 2, height, 256, 300, [0.07, 0.062, 0.05]);
-  // Warm light from the lit apse beyond spills round the archway.
-  p.pool(W, arch.spring + 0.4, arch.halfWidth + 2.4, arch.spring + 1.6, WARM, 0.5);
+  const p = new SurfacePainter(W * 2, height, 256, 300, [0.067, 0.063, 0.057]);
+  // Warm light from the lit apse beyond spills round the archway, so the end of the walk glows.
+  p.pool(W, arch.spring + 0.4, arch.halfWidth + 2.4, arch.spring + 1.6, WARM, 0.62);
   // Wall washers either side of the arch, and daylight from the lunette window above the cornice.
   for (const x of [W - arch.halfWidth - 1.9, W + arch.halfWidth + 1.9]) p.pool(x, H + 0.3, 1.2, 3.6, SOFT_WARM, 0.3);
   p.pool(W, H + 1.4, 3.8, 2.4, DAYLIGHT, 0.35);
@@ -393,13 +400,13 @@ export function bakeFacade(pilasterXs: readonly number[]): BakedLight {
   const cx = w / 2;
   const p = new SurfacePainter(w, h, 512, 256, [0.015, 0.013, 0.01]);
   // The lit portico glows out through the great arch onto the surrounding stone.
-  p.pool(cx, FACADE.archSpring + 1, FACADE.archHalfWidth + 3.2, FACADE.archSpring + 2.8, WARM, 0.3);
+  p.pool(cx, FACADE.archSpring + 1, FACADE.archHalfWidth + 3.2, FACADE.archSpring + 2.8, DUSK_WARM, 0.3);
   // Uplights at the foot of the wall between the pilasters: narrow scallops fading up the facade.
   const bays = [...pilasterXs, -w / 2 + 0.6, w / 2 - 0.6].sort((a, b) => a - b);
   for (let i = 0; i < bays.length - 1; i++) {
     const mid = (bays[i] + bays[i + 1]) / 2;
     if (Math.abs(mid) < FACADE.archHalfWidth + 1) continue;
-    p.pool(cx + mid, 0, 1.1, 5.2, WARM, 0.34);
+    p.pool(cx + mid, 0, 1.1, 5.2, DUSK_WARM, 0.34);
   }
   // Dusk: beyond the archivolt the facade falls into shadow, toward the sides and up toward the cornice.
   const edge = FACADE.archHalfWidth + 0.9;
@@ -421,10 +428,10 @@ export function bakeInnerFacade(lanternX: number, lanternY: number): BakedLight 
   // A concentrated amber glow on the stone around each lantern, and a softer, wider one.
   for (const side of [-1, 1]) {
     p.pool(cx + side * lanternX, lanternY + 0.1, 0.9, 1.2, [1, 0.72, 0.42], 0.9);
-    p.pool(cx + side * lanternX, lanternY + 0.3, 1.8, 2.3, WARM, 0.35);
+    p.pool(cx + side * lanternX, lanternY + 0.3, 1.8, 2.3, DUSK_WARM, 0.35);
   }
   // The downlight over the doors: a broad pool on the lunette and the inscription.
-  p.pool(cx, DOORWAY.spring + 3.4, 3.2, 3.2, WARM, 0.32);
+  p.pool(cx, DOORWAY.spring + 3.4, 3.2, 3.2, DUSK_WARM, 0.32);
   p.shadeY(0.32, 1.4, 0.55);
   p.shadeX(cx - FACADE.archHalfWidth, cx - FACADE.archHalfWidth + 1.1, 0.5);
   p.shadeX(cx + FACADE.archHalfWidth, cx + FACADE.archHalfWidth - 1.1, 0.5);

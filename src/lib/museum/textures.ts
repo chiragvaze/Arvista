@@ -1,4 +1,4 @@
-import { CanvasTexture, DataTexture, RepeatWrapping, SRGBColorSpace, NoColorSpace, type Texture } from "three";
+import { CanvasTexture, DataTexture, RepeatWrapping, SRGBColorSpace, NoColorSpace } from "three";
 
 /**
  * Procedurally painted surface textures. Generated once on the client from a
@@ -14,66 +14,6 @@ function seededRandom(seed: number): () => number {
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** Smooth 2D value noise with fractal octaves, deterministic per seed. Optionally periodic (tileable). */
-function createNoise(seed: number, period = 0) {
-  const rand = seededRandom(seed);
-  const N = 256;
-  const lattice = new Float32Array(N * N);
-  for (let i = 0; i < lattice.length; i++) lattice[i] = rand();
-  const fade = (t: number) => t * t * (3 - 2 * t);
-  const at = (x: number, y: number) => lattice[(((y % N) + N) % N) * N + (((x % N) + N) % N)];
-  const value = (x: number, y: number, p: number) => {
-    const x0 = Math.floor(x);
-    const y0 = Math.floor(y);
-    const fx = fade(x - x0);
-    const fy = fade(y - y0);
-    const wrap = (v: number) => (p ? ((v % p) + p) % p : v);
-    const a = at(wrap(x0), wrap(y0));
-    const b = at(wrap(x0 + 1), wrap(y0));
-    const c = at(wrap(x0), wrap(y0 + 1));
-    const d = at(wrap(x0 + 1), wrap(y0 + 1));
-    return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
-  };
-  /** Fractal noise in [0, 1]; x and y in lattice cells. */
-  return (x: number, y: number, octaves = 4) => {
-    let sum = 0;
-    let amp = 0.5;
-    let norm = 0;
-    let freq = 1;
-    for (let o = 0; o < octaves; o++) {
-      sum += value(x * freq, y * freq, period * freq) * amp;
-      norm += amp;
-      amp *= 0.5;
-      freq *= 2;
-    }
-    return sum / norm;
-  };
-}
-
-/**
- * Samples a noise function on a coarse (cells + 1)^2 grid and returns a cheap
- * bilinear lookup for u, v in [0, 1]. Per-pixel fractal noise over a megapixel
- * texture is far too slow for page load; the grid keeps the same soft shapes.
- */
-function noiseGrid(sample: (u: number, v: number) => number, cells: number) {
-  const n = cells + 1;
-  const grid = new Float32Array(n * n);
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) grid[j * n + i] = sample(i / cells, j / cells);
-  return (u: number, v: number) => {
-    const x = Math.min(u * cells, cells - 1e-6);
-    const y = Math.min(v * cells, cells - 1e-6);
-    const i = Math.floor(x);
-    const j = Math.floor(y);
-    const fx = x - i;
-    const fy = y - j;
-    const a = grid[j * n + i];
-    const b = grid[j * n + i + 1];
-    const c = grid[(j + 1) * n + i];
-    const d = grid[(j + 1) * n + i + 1];
-    return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
   };
 }
 
@@ -106,235 +46,17 @@ function speckle(ctx: CanvasRenderingContext2D, size: number, rand: () => number
   }
 }
 
-export interface SurfaceTextures {
-  marble: Texture;
-  stone: Texture;
-  plaster: Texture;
-  plasterBump: Texture;
-  wood: Texture;
-  woodBump: Texture;
-}
-
-let cache: SurfaceTextures | null = null;
-
-function createMarble(): CanvasTexture {
-  // Four 1.5 m slabs per repeat. Each slab has its own vein direction and tone, like real cut stone,
-  // so veins break at the joints instead of running unnaturally across the floor.
-  // 384 px per 1.5 m slab: ample once the floor's blurred reflection is applied, and it keeps
-  // this per-pixel pass short enough not to delay the first frame.
-  const size = 768;
-  const tile = size / 2;
-  const [canvas, ctx] = makeCanvas(size);
-  const image = ctx.createImageData(size, size);
-  const px = image.data;
-  const rand = seededRandom(7);
-  for (let ty = 0; ty < 2; ty++) {
-    for (let tx = 0; tx < 2; tx++) {
-      const noise = createNoise(100 + ty * 2 + tx);
-      const warpAt = noiseGrid((u, v) => noise(u * 2.4, v * 2.4, 4), 96);
-      const fineWarpAt = noiseGrid((u, v) => noise(u * 7 + 31, v * 7 + 31, 3), 96);
-      const cloudAt = noiseGrid((u, v) => noise(u * 1.3 + 9, v * 1.3 + 9, 3), 32);
-      const angle = rand() * Math.PI;
-      const ca = Math.cos(angle);
-      const sa = Math.sin(angle);
-      // A second, finer network crosses the main veins at a steep angle, as in Calacatta-type stone.
-      const angle2 = angle + 0.9 + rand() * 0.5;
-      const cb = Math.cos(angle2);
-      const sb = Math.sin(angle2);
-      const tone = (rand() - 0.5) * 7;
-      const veinShift = rand();
-      for (let y = 0; y < tile; y++) {
-        for (let x = 0; x < tile; x++) {
-          const u = x / tile;
-          const v = y / tile;
-          const warp = warpAt(u, v);
-          const fine = fineWarpAt(u, v);
-          const along = u * ca + v * sa;
-          const across = u * cb + v * sb;
-          // Soft-edged primary veins (a few per slab), a fainter secondary network, and hairline veins.
-          const p = 1 - Math.abs(Math.sin(Math.PI * (along * 1.25 + warp * 2.2 + veinShift)));
-          const q = 1 - Math.abs(Math.sin(Math.PI * (across * 2.1 + warp * 3.6 + fine * 1.6)));
-          const r = 1 - Math.abs(Math.sin(Math.PI * (along * 6.5 + fine * 3.4 + 0.2)));
-          const p2 = p * p, p4 = p2 * p2, p8 = p4 * p4;
-          const q2 = q * q, q4 = q2 * q2, q8 = q4 * q4, q16 = q8 * q8;
-          const r2 = r * r, r4 = r2 * r2, r8 = r4 * r4, r16 = r8 * r8, r32 = r16 * r16;
-          const primary = p8 * p4; // p^12: a soft halo around a darker core
-          const core = primary * primary * p8; // p^32
-          const secondary = q16 * q4; // q^20
-          const hairline = r32 * r8; // r^40
-          const cloud = cloudAt(u, v) - 0.5;
-          // The secondary network fades in and out across the slab, so it never reads as parallel lines.
-          const patchy = Math.max(0, cloud * 2.2 + 0.35);
-          const vein = primary * 30 + core * 46 + secondary * 22 * patchy + hairline * 12 * (1 - patchy * 0.5);
-          const ground = tone + cloud * 15;
-          const i = ((ty * tile + y) * size + tx * tile + x) * 4;
-          // Warm ivory ground; veins are a cool taupe grey with a faint warm halo.
-          px[i] = 238 + ground - vein * 0.86;
-          px[i + 1] = 231 + ground - vein * 0.9;
-          px[i + 2] = 218 + ground * 1.1 - vein * 0.88;
-          px[i + 3] = 255;
-        }
-      }
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-  speckle(ctx, size, rand, 2600, 0.03);
-  // Fine joints between slabs.
-  ctx.strokeStyle = "rgba(96,78,58,0.32)";
-  ctx.lineWidth = 1.5;
-  for (let i = 0; i <= 2; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i * tile, 0);
-    ctx.lineTo(i * tile, size);
-    ctx.moveTo(0, i * tile);
-    ctx.lineTo(size, i * tile);
-    ctx.stroke();
-  }
-  return toTexture(canvas, true, 8);
-}
-
 /**
- * Honed ivory limestone for the walls: an almost even ground with very soft,
- * low-contrast clouding and fine pores. Kept deliberately quiet: the light
- * (picture lights, wall washes, contact shadows) gives the walls their
- * variation, so the texture never reads as stains or as a repeating pattern.
+ * One kentia palm frond, drawn with transparency: a bare stalk at the base, then
+ * a midrib carrying long, slender leaflets that sweep toward the tip. The tip is
+ * at the top of the canvas. The leaflets' droop comes from the frond geometry
+ * (see Planter), which folds the frond into a shallow V along its midrib.
  */
-function createPlaster(): [CanvasTexture, CanvasTexture] {
-  const size = 512;
-  const [canvas, ctx] = makeCanvas(size);
-  const image = ctx.createImageData(size, size);
-  const noise = createNoise(23, 6);
-  const cloudAt = noiseGrid((u, v) => noise(u * 6, v * 6, 4), 96);
-  const grainAt = noiseGrid((u, v) => noise(u * 48 + 5, v * 48 + 5, 2), 384);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const u = x / size;
-      const v = y / size;
-      const n = (cloudAt(u, v) - 0.5) * 7 + (grainAt(u, v) - 0.5) * 5;
-      const i = (y * size + x) * 4;
-      image.data[i] = 238 + n;
-      image.data[i + 1] = 229 + n;
-      image.data[i + 2] = 214 + n * 1.1;
-      image.data[i + 3] = 255;
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-  const rand = seededRandom(21);
-  // Fine pores and the odd fossil fleck, as in honed limestone.
-  for (let i = 0; i < 5200; i++) {
-    const dark = rand() > 0.3;
-    ctx.fillStyle = dark ? `rgba(120,98,70,${0.05 + rand() * 0.1})` : `rgba(255,252,244,${0.08 + rand() * 0.1})`;
-    const r = 0.5 + rand() * 1.1;
-    ctx.fillRect(rand() * size, rand() * size, r, r * (0.6 + rand() * 0.8));
-  }
-
-  const [bumpCanvas, bump] = makeCanvas(size);
-  bump.fillStyle = "#808080";
-  bump.fillRect(0, 0, size, size);
-  for (let i = 0; i < 9000; i++) {
-    bump.fillStyle = `rgba(0,0,0,${0.08 + rand() * 0.18})`;
-    const r = 0.5 + rand() * 1.2;
-    bump.fillRect(rand() * size, rand() * size, r, r);
-  }
-  return [toTexture(canvas, true), toTexture(bumpCanvas, false)];
-}
-
-function createWood(): [CanvasTexture, CanvasTexture] {
-  // Straight-grained walnut. Tileable in both directions: colour bands come from periodic noise
-  // across the width, and every grain line uses a whole number of waves down the height.
-  const size = 512;
-  const [canvas, ctx] = makeCanvas(size);
-  const [bumpCanvas, bump] = makeCanvas(size);
-  const rand = seededRandom(3);
-  const band = createNoise(31, 16);
-  for (let x = 0; x < size; x++) {
-    const t = band((x / size) * 16, 0.5, 4);
-    const fine = band((x / size) * 16 * 5, 7.5, 2);
-    // Figured walnut: broad lighter and darker streaks with a reddish warmth.
-    const l = 0.8 + (t - 0.5) * 0.7 + (fine - 0.5) * 0.22;
-    ctx.fillStyle = `rgb(${Math.round(84 * l)}, ${Math.round(47 * l)}, ${Math.round(29 * l)})`;
-    ctx.fillRect(x, 0, 1, size);
-  }
-  bump.fillStyle = "#808080";
-  bump.fillRect(0, 0, size, size);
-  const line = (c: CanvasRenderingContext2D, x0: number, amp: number, waves: number, phase: number) => {
-    c.beginPath();
-    for (let y = 0; y <= size; y += 8) {
-      const x = x0 + Math.sin((y / size) * Math.PI * 2 * waves + phase) * amp;
-      if (y === 0) c.moveTo(x, y);
-      else c.lineTo(x, y);
-    }
-    c.stroke();
-  };
-  for (let i = 0; i < 320; i++) {
-    const x0 = rand() * size;
-    const amp = 0.5 + rand() * 3;
-    const waves = 1 + Math.floor(rand() * 3);
-    const phase = rand() * Math.PI * 2;
-    const alpha = 0.04 + rand() * 0.1;
-    const width = 0.5 + rand() * 1.4;
-    ctx.strokeStyle = `rgba(18,9,4,${alpha})`;
-    bump.strokeStyle = `rgba(0,0,0,${alpha * 1.6})`;
-    ctx.lineWidth = width;
-    bump.lineWidth = width;
-    for (const offset of [0, -size, size]) {
-      if (offset !== 0 && Math.abs(x0 + offset - size / 2) > size / 2 + 8) continue;
-      line(ctx, x0 + offset, amp, waves, phase);
-      line(bump, x0 + offset, amp, waves, phase);
-    }
-  }
-  // Open pores: short dark flecks along the grain.
-  for (let i = 0; i < 2600; i++) {
-    const x = rand() * size;
-    const y = rand() * size;
-    const a = 0.08 + rand() * 0.12;
-    ctx.fillStyle = `rgba(14,7,3,${a})`;
-    ctx.fillRect(x, y, 0.8, 2 + rand() * 5);
-    bump.fillStyle = `rgba(0,0,0,${a * 1.5})`;
-    bump.fillRect(x, y, 0.8, 2 + rand() * 5);
-  }
-  return [toTexture(canvas, true, 8), toTexture(bumpCanvas, false, 8)];
-}
-
-function createStone(): CanvasTexture {
-  // Fine pale limestone for mouldings: soft clouding and tiny flecks, no veins.
-  const size = 512;
-  const [canvas, ctx] = makeCanvas(size);
-  const image = ctx.createImageData(size, size);
-  const noise = createNoise(57, 8);
-  // The noise is periodic over the tile, so the grid's last row/column equals its first and the texture tiles.
-  const stoneAt = noiseGrid((u, v) => noise(u * 8, v * 8, 5), 128);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const n = stoneAt(x / size, y / size) - 0.5;
-      const i = (y * size + x) * 4;
-      image.data[i] = 240 + n * 16;
-      image.data[i + 1] = 233 + n * 17;
-      image.data[i + 2] = 220 + n * 19;
-      image.data[i + 3] = 255;
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-  speckle(ctx, size, seededRandom(58), 7000, 0.06);
-  return toTexture(canvas, true);
-}
-
-export function getSurfaceTextures(): SurfaceTextures {
-  if (cache) return cache;
-  const [plaster, plasterBump] = createPlaster();
-  const [wood, woodBump] = createWood();
-  const marble = createMarble();
-  const stone = createStone();
-  cache = { marble, stone, plaster, plasterBump, wood, woodBump };
-  return cache;
-}
-
-/** A transparent fern-like frond for the entrance planters. */
 let frondCache: CanvasTexture | null = null;
 export function getFrondTexture(): CanvasTexture {
   if (frondCache) return frondCache;
   const w = 256;
-  const h = 512;
+  const h = 1024;
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
@@ -342,24 +64,48 @@ export function getFrondTexture(): CanvasTexture {
   if (!ctx) throw new Error("2D canvas is unavailable");
   const rand = seededRandom(11);
   const cx = w / 2;
-  ctx.strokeStyle = "#3d5a2a";
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(cx, h);
-  ctx.lineTo(cx, 10);
-  ctx.stroke();
-  for (let y = h - 30; y > 20; y -= 13) {
-    const t = 1 - y / h;
-    const len = Math.sin(Math.min(t * 1.15, 1) * Math.PI) * 105 + 8;
+  /** Leaflets run from 20% of the length (above the bare stalk) to the tip. */
+  const firstLeaflet = 0.8 * h;
+  const tip = 0.02 * h;
+
+  // Leaflets first, so the midrib is drawn over their bases.
+  for (let y = firstLeaflet; y > tip; y -= 15 + rand() * 4) {
+    const t = (firstLeaflet - y) / (firstLeaflet - tip);
+    const reach = Math.pow(Math.sin(Math.PI * (0.12 + 0.82 * t)), 0.6) * (w * 0.47) + 10;
     for (const side of [-1, 1]) {
-      const g = 90 + Math.floor(rand() * 40);
-      ctx.fillStyle = `rgb(${40 + Math.floor(rand() * 20)}, ${g}, ${45 + Math.floor(rand() * 15)})`;
+      const length = reach * (0.86 + rand() * 0.2);
+      // Leaflets sweep forward (toward the tip) more steeply near the tip.
+      const angle = (0.62 + 0.35 * t + (rand() - 0.5) * 0.12) * (Math.PI / 2);
+      const ex = cx + side * Math.cos(Math.PI / 2 - angle) * length;
+      const ey = y - Math.sin(Math.PI / 2 - angle) * length * 0.55 - length * 0.35;
+      const width = 4 + (1 - Math.abs(t - 0.45)) * 4;
+      const g = 64 + Math.floor(rand() * 34);
+      ctx.fillStyle = `rgb(${26 + Math.floor(rand() * 18)}, ${g}, ${26 + Math.floor(rand() * 14)})`;
+      // A slender lanceolate leaflet: widest a third of the way along, tapering to a point.
+      const mx = cx + (ex - cx) * 0.35;
+      const my = y + (ey - y) * 0.35;
+      const nx = -(ey - y) / length;
+      const ny = (ex - cx) / length;
       ctx.beginPath();
       ctx.moveTo(cx, y);
-      ctx.quadraticCurveTo(cx + side * len * 0.5, y - 16, cx + side * len, y - 26);
-      ctx.quadraticCurveTo(cx + side * len * 0.5, y - 2, cx, y + 6);
+      ctx.quadraticCurveTo(mx + nx * width, my + ny * width, ex, ey);
+      ctx.quadraticCurveTo(mx - nx * width, my - ny * width, cx, y + 3);
       ctx.fill();
+      // Paler midvein along each leaflet.
+      ctx.strokeStyle = "rgba(150, 175, 100, 0.45)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx, y);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
     }
+  }
+  // Stalk and midrib, tapering toward the tip.
+  for (let y = h; y > tip; y -= 4) {
+    const t = (h - y) / (h - tip);
+    ctx.fillStyle = `rgb(${70 - t * 20}, ${86 - t * 10}, ${44 - t * 8})`;
+    const half = 3.4 - t * 2.4;
+    ctx.fillRect(cx - half, y - 4, half * 2, 5);
   }
   frondCache = new CanvasTexture(canvas);
   frondCache.colorSpace = SRGBColorSpace;
@@ -577,8 +323,6 @@ export function getSoftShadowTexture(): CanvasTexture {
 }
 
 export interface DetailTextures {
-  /** Dark marble with fine gold-white veins: skirting, plinths and the floor border. */
-  darkMarble: CanvasTexture;
   /** Vertical fluting relief for pilaster shafts (bump map). */
   flutes: CanvasTexture;
   /** Fine linen weave for picture mats. */
@@ -591,40 +335,7 @@ let detailCache: DetailTextures | null = null;
 export function getDetailTextures(): DetailTextures {
   if (detailCache) return detailCache;
 
-  // Dark marble: near-black brown ground, soft cloud, and thin warm veins that wrap around the tile.
-  const [marbleCanvas, marble] = makeCanvas(512);
   const rand = seededRandom(73);
-  marble.fillStyle = "#3e332c";
-  marble.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 120; i++) {
-    const r = 30 + rand() * 120;
-    const g = marble.createRadialGradient(0, 0, 0, 0, 0, r);
-    g.addColorStop(0, rand() > 0.5 ? "rgba(70,56,44,0.10)" : "rgba(10,8,6,0.14)");
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    marble.save();
-    marble.translate(rand() * 512, rand() * 512);
-    marble.fillStyle = g;
-    marble.fillRect(-r, -r, r * 2, r * 2);
-    marble.restore();
-  }
-  marble.lineCap = "round";
-  for (let i = 0; i < 18; i++) {
-    const y0 = rand() * 512;
-    const slope = (rand() - 0.5) * 0.9;
-    const alpha = 0.4 + rand() * 0.45;
-    marble.strokeStyle = `rgba(232,214,176,${alpha})`;
-    marble.lineWidth = 1 + rand() * 2.2;
-    for (const offset of [-512, 0, 512]) {
-      marble.beginPath();
-      let y = y0 + offset;
-      marble.moveTo(0, y);
-      for (let x = 16; x <= 512; x += 16) {
-        y += slope * 16 + (rand() - 0.5) * 9;
-        marble.lineTo(x, y);
-      }
-      marble.stroke();
-    }
-  }
 
   // Fluting: five rounded channels across the texture width, as a height map.
   const [fluteCanvas, flute] = makeCanvas(256);
@@ -657,7 +368,7 @@ export function getDetailTextures(): DetailTextures {
 
   const flutes = toTexture(fluteCanvas, false);
   flutes.wrapT = RepeatWrapping;
-  detailCache = { darkMarble: toTexture(marbleCanvas, true, 8), flutes, linen: toTexture(linenCanvas, true, 8) };
+  detailCache = { flutes, linen: toTexture(linenCanvas, true, 8) };
   return detailCache;
 }
 
@@ -703,7 +414,8 @@ export interface NicheTextures {
 /**
  * Baked lighting for the apse seen through the final archway. It is only ever
  * seen from a distance, so its limestone is shaded into the texture (a warm
- * light from above, falling off to the sides and the floor) and drawn unlit.
+ * light from above, falling off to the sides and the floor), with its impost
+ * moulding and baseboard painted in, and drawn unlit.
  */
 export function createNicheTextures(): NicheTextures {
   const grain = (ctx: CanvasRenderingContext2D, w: number, h: number, seed: number) => {
@@ -722,33 +434,48 @@ export function createNicheTextures(): NicheTextures {
     return [c, ctx] as const;
   };
 
+  // The apse wall is 4.4 m high: 58 px per metre.
   const [wallCanvas, wall] = canvas(256, 256);
+  // Ivory limestone lit from a hidden opening above: brightest under the dome, a warm grey toward the floor.
   const vertical = wall.createLinearGradient(0, 0, 0, 256);
-  vertical.addColorStop(0, "#e8c894");
-  vertical.addColorStop(0.5, "#c9a473");
-  vertical.addColorStop(1, "#6f5640");
+  vertical.addColorStop(0, "#f0dcbc");
+  vertical.addColorStop(0.45, "#d9bf98");
+  vertical.addColorStop(1, "#8f765a");
   wall.fillStyle = vertical;
   wall.fillRect(0, 0, 256, 256);
   const sides = wall.createLinearGradient(0, 0, 256, 0);
-  sides.addColorStop(0, "rgba(52,36,22,0.7)");
-  sides.addColorStop(0.32, "rgba(52,36,22,0)");
-  sides.addColorStop(0.68, "rgba(52,36,22,0)");
-  sides.addColorStop(1, "rgba(52,36,22,0.7)");
+  sides.addColorStop(0, "rgba(62,48,34,0.62)");
+  sides.addColorStop(0.3, "rgba(62,48,34,0)");
+  sides.addColorStop(0.7, "rgba(62,48,34,0)");
+  sides.addColorStop(1, "rgba(62,48,34,0.62)");
   wall.fillStyle = sides;
   wall.fillRect(0, 0, 256, 256);
-  // A downlight's pool on the back of the niche, behind the urn.
-  const pool = wall.createRadialGradient(128, 70, 4, 128, 90, 120);
-  pool.addColorStop(0, "rgba(255,236,200,0.55)");
-  pool.addColorStop(0.5, "rgba(255,226,180,0.18)");
-  pool.addColorStop(1, "rgba(255,226,180,0)");
+  // A downlight's pool on the back of the niche, behind the palm.
+  const pool = wall.createRadialGradient(128, 64, 4, 128, 92, 124);
+  pool.addColorStop(0, "rgba(255,246,226,0.7)");
+  pool.addColorStop(0.5, "rgba(255,238,212,0.24)");
+  pool.addColorStop(1, "rgba(255,240,218,0)");
   wall.fillStyle = pool;
   wall.fillRect(0, 0, 256, 256);
+  // Impost moulding where the dome springs: a lit upper edge over a soft shadow line.
+  wall.fillStyle = "rgba(255,250,238,0.45)";
+  wall.fillRect(0, 2, 256, 3);
+  const impost = wall.createLinearGradient(0, 5, 0, 13);
+  impost.addColorStop(0, "rgba(70,52,36,0.32)");
+  impost.addColorStop(1, "rgba(70,52,36,0)");
+  wall.fillStyle = impost;
+  wall.fillRect(0, 5, 256, 8);
+  // Dark marble baseboard with a limestone cap, as along the corridor (0.42 m).
+  wall.fillStyle = "#3a3632";
+  wall.fillRect(0, 232, 256, 24);
+  wall.fillStyle = "rgba(240,228,206,0.75)";
+  wall.fillRect(0, 229, 256, 3);
   grain(wall, 256, 256, 401);
 
   const [domeCanvas, dome] = canvas(256, 128);
   const crown = dome.createLinearGradient(0, 0, 0, 128);
-  crown.addColorStop(0, "#f6deb0");
-  crown.addColorStop(1, "#d9b47e");
+  crown.addColorStop(0, "#f8ead0");
+  crown.addColorStop(1, "#e2c9a2");
   dome.fillStyle = crown;
   dome.fillRect(0, 0, 256, 128);
   dome.fillStyle = sides;
@@ -757,13 +484,13 @@ export function createNicheTextures(): NicheTextures {
 
   const [sideCanvas, side] = canvas(256, 128);
   const toward = side.createLinearGradient(0, 0, 256, 0);
-  toward.addColorStop(0, "#4a3a2b");
-  toward.addColorStop(1, "#a7865e");
+  toward.addColorStop(0, "#584838");
+  toward.addColorStop(1, "#c4a985");
   side.fillStyle = toward;
   side.fillRect(0, 0, 256, 128);
   const floorShade = side.createLinearGradient(0, 0, 0, 128);
-  floorShade.addColorStop(0, "rgba(255,240,215,0.12)");
-  floorShade.addColorStop(1, "rgba(40,28,18,0.3)");
+  floorShade.addColorStop(0, "rgba(255,244,226,0.12)");
+  floorShade.addColorStop(1, "rgba(44,34,24,0.3)");
   side.fillStyle = floorShade;
   side.fillRect(0, 0, 256, 128);
   grain(side, 256, 128, 403);

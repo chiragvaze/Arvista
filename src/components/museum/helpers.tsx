@@ -119,7 +119,16 @@ export function AimedSpotLight({
  * Drop-in replacement for `<boxGeometry args={[w, h, d]} />` inside a mesh,
  * with softly rounded edges (see bevelledBox).
  */
-export function BevelledBox({ args, radius }: { args: readonly [number, number, number]; radius?: number }) {
-  const geometry = useDisposable(() => bevelledBox(args[0], args[1], args[2], radius));
+export function BevelledBox({
+  args,
+  radius,
+  faceUVs,
+}: {
+  args: readonly [number, number, number];
+  radius?: number;
+  /** Keep 0..1 UVs on each face (for face-sized patterns such as fluting) instead of metric ones. */
+  faceUVs?: boolean;
+}) {
+  const geometry = useDisposable(() => bevelledBox(args[0], args[1], args[2], radius, { faceUVs }));
   return <primitive object={geometry} attach="geometry" />;
 }

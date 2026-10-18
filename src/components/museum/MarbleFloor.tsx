@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
+  Color,
   HalfFloatType,
   LinearFilter,
   LinearMipmapLinearFilter,
@@ -15,6 +16,7 @@ import {
   Vector4,
   WebGLRenderTarget,
   type Mesh,
+  type Texture,
   type WebGLProgramParametersWithUniforms,
 } from "three";
 import type { QualityTier } from "@/lib/museum/deviceTier";
@@ -28,8 +30,8 @@ const WIDTH = 34;
 const NEAR_Z = 30;
 /** Runs past the end wall and under the apse. */
 const FAR_Z = CORRIDOR.endZ - 12;
-/** One texture repeat holds 2 x 2 marble slabs of 1.5 m. */
-const METRES_PER_REPEAT = 3;
+/** One texture repeat is one 1.5 m marble slab. */
+const METRES_PER_REPEAT = 1.5;
 
 /** Size of the reflection render; its softness comes from sampling a blurrier mip level as well. */
 const REFLECTION_SIZE = 256;
@@ -145,37 +147,100 @@ class PlanarReflection {
 }
 
 /**
+ * Lays the marble photograph slab by slab, so the floor never shows a repeating
+ * pattern: each 1.5 m slab (one texture repeat) takes the image at its own
+ * quarter-turn and offset, with a slight difference in tone, as cut slabs from
+ * one block differ. Sampling uses the continuous UV derivatives (rotated with
+ * the slab), so mip levels stay smooth across slab edges. Fine joints are drawn
+ * between slabs and fade out where they would be thinner than a pixel.
+ */
+const SLAB_MAP = `
+vec2 slabCell = floor(vMapUv);
+vec2 slabLocal = vMapUv - slabCell;
+float slabHash = fract(sin(dot(slabCell, vec2(12.9898, 78.233))) * 43758.5453);
+float slabTurn = floor(slabHash * 4.0);
+vec2 slabAxis = slabTurn < 1.0 ? vec2(1.0, 0.0) : slabTurn < 2.0 ? vec2(0.0, 1.0) : slabTurn < 3.0 ? vec2(-1.0, 0.0) : vec2(0.0, -1.0);
+mat2 slabRotation = mat2(slabAxis.x, slabAxis.y, -slabAxis.y, slabAxis.x);
+vec2 slabUv = slabRotation * (slabLocal - 0.5) + 0.5 + vec2(fract(slabHash * 7.13), fract(slabHash * 3.71));
+vec2 slabDx = slabRotation * dFdx(vMapUv);
+vec2 slabDy = slabRotation * dFdy(vMapUv);
+vec4 sampledDiffuseColor = textureGrad(map, slabUv, slabDx, slabDy);
+// The veins are fine and mipmapping softens them with distance: deepen them around the stone's mean colour.
+sampledDiffuseColor.rgb = max(vec3(0.0), (sampledDiffuseColor.rgb - SLAB_MEAN) * SLAB_CONTRAST + SLAB_MEAN);
+sampledDiffuseColor.rgb *= 0.95 + 0.1 * fract(slabHash * 13.37);
+float slabPixel = max(max(fwidth(vMapUv).x, fwidth(vMapUv).y), 1e-5);
+float slabJoint = (1.0 - smoothstep(SLAB_JOINT - slabPixel, SLAB_JOINT + slabPixel, min(min(slabLocal.x, 1.0 - slabLocal.x), min(slabLocal.y, 1.0 - slabLocal.y))))
+  * clamp(SLAB_JOINT / slabPixel, 0.0, 1.0);
+sampledDiffuseColor.rgb *= 1.0 - 0.32 * slabJoint;
+diffuseColor *= sampledDiffuseColor;
+`;
+const SLAB_ROUGHNESS = `
+float roughnessFactor = roughness;
+#ifdef USE_ROUGHNESSMAP
+  roughnessFactor *= textureGrad(roughnessMap, slabUv, slabDx, slabDy).g;
+#endif
+`;
+/** Joint half-width as a share of a slab (about 3 mm on a 1.5 m slab). */
+const SLAB_JOINT_WIDTH = 0.002;
+/** Vein contrast boost, around the photograph's mean colour (linear). */
+const SLAB_CONTRAST = 1.7;
+const SLAB_MEAN = "vec3(0.637, 0.552, 0.439)";
+
+function laySlabs(shader: WebGLProgramParametersWithUniforms) {
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      "#include <common>",
+      `#include <common>\n#define SLAB_JOINT ${SLAB_JOINT_WIDTH.toFixed(4)}\n#define SLAB_CONTRAST ${SLAB_CONTRAST.toFixed(2)}\n#define SLAB_MEAN ${SLAB_MEAN}`,
+    )
+    .replace("#include <map_fragment>", SLAB_MAP)
+    .replace("#include <roughnessmap_fragment>", SLAB_ROUGHNESS);
+}
+
+/**
  * Polished marble: the lit stone plus the reflection added on top, weighted by
  * Fresnel reflectance (about 4% looking straight down, rising toward grazing
  * angles), so the floor reflects faintly underfoot and clearly down the corridor.
  */
-function makeReflective(material: MeshStandardMaterial, reflection: PlanarReflection): MeshStandardMaterial {
-  const uniforms = {
+function reflect(shader: WebGLProgramParametersWithUniforms, reflection: PlanarReflection) {
+  Object.assign(shader.uniforms, {
     reflectionMap: { value: reflection.target.texture },
     reflectionMatrix: { value: reflection.textureMatrix },
     reflectionLod: { value: REFLECTION_BLUR.lod },
     reflectionBlurMix: { value: REFLECTION_BLUR.mix },
-  };
+  });
+  shader.vertexShader = shader.vertexShader
+    .replace("#include <common>", "#include <common>\nuniform mat4 reflectionMatrix;\nvarying vec4 vReflectionCoord;")
+    .replace("#include <project_vertex>", "#include <project_vertex>\nvReflectionCoord = reflectionMatrix * vec4(transformed, 1.0);");
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      "#include <common>",
+      "#include <common>\nuniform sampler2D reflectionMap;\nuniform float reflectionLod;\nuniform float reflectionBlurMix;\nvarying vec4 vReflectionCoord;",
+    )
+    .replace(
+      "#include <opaque_fragment>",
+      `vec2 reflectionUv = vReflectionCoord.xy / vReflectionCoord.w;
+      vec3 reflected = mix(textureLod(reflectionMap, reflectionUv, 0.0).rgb, textureLod(reflectionMap, reflectionUv, reflectionLod).rgb, reflectionBlurMix);
+      float reflectionNdotV = saturate(dot(normal, normalize(vViewPosition)));
+      outgoingLight += reflected * (0.04 + 0.96 * pow(1.0 - reflectionNdotV, 5.0));
+      #include <opaque_fragment>`,
+    );
+}
+
+/** The floor's marble, laid slab by slab, with the planar reflection on the high tier. */
+function marbleMaterial(maps: { map: Texture; roughnessMap: Texture }, ao: Texture, reflection: PlanarReflection | null) {
+  const material = new MeshStandardMaterial({
+    ...maps,
+    aoMap: ao,
+    color: new Color().setRGB(0.95, 0.93, 0.9),
+    // The photographed roughness is mirror-smooth (about 0.07); this lifts it to a softer polish of about 0.2.
+    roughness: 3,
+    metalness: 0,
+  });
   material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nuniform mat4 reflectionMatrix;\nvarying vec4 vReflectionCoord;")
-      .replace("#include <project_vertex>", "#include <project_vertex>\nvReflectionCoord = reflectionMatrix * vec4(transformed, 1.0);");
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        "#include <common>",
-        "#include <common>\nuniform sampler2D reflectionMap;\nuniform float reflectionLod;\nuniform float reflectionBlurMix;\nvarying vec4 vReflectionCoord;",
-      )
-      .replace(
-        "#include <opaque_fragment>",
-        `vec2 reflectionUv = vReflectionCoord.xy / vReflectionCoord.w;
-        vec3 reflected = mix(textureLod(reflectionMap, reflectionUv, 0.0).rgb, textureLod(reflectionMap, reflectionUv, reflectionLod).rgb, reflectionBlurMix);
-        float reflectionNdotV = saturate(dot(normal, normalize(vViewPosition)));
-        outgoingLight += reflected * (0.04 + 0.96 * pow(1.0 - reflectionNdotV, 5.0));
-        #include <opaque_fragment>`,
-      );
+    laySlabs(shader);
+    if (reflection) reflect(shader, reflection);
   };
-  material.customProgramCacheKey = () => "arvista-floor-reflection";
+  material.customProgramCacheKey = () => (reflection ? "arvista-floor-slabs-reflection" : "arvista-floor-slabs");
   return material;
 }
 
@@ -186,7 +251,7 @@ function makeReflective(material: MeshStandardMaterial, reflection: PlanarReflec
  * contact shadows ground the walls, the planters and the bench.
  */
 export function MarbleFloor({ quality }: { quality: QualityTier }) {
-  const { marbleMap } = useMuseumMaterials();
+  const { floorMarble } = useMuseumMaterials();
   const floor = useRef<Mesh>(null);
   const length = NEAR_Z - FAR_Z;
   const geometry = useDisposable(() => scaleUVs(new PlaneGeometry(WIDTH, length), WIDTH / METRES_PER_REPEAT, length / METRES_PER_REPEAT));
@@ -194,10 +259,7 @@ export function MarbleFloor({ quality }: { quality: QualityTier }) {
     fitToMetres(bakeFloor(WIDTH, NEAR_Z, FAR_Z, PLANTER_SPOTS), WIDTH / METRES_PER_REPEAT, length / METRES_PER_REPEAT),
   );
   const reflection = useMemo(() => (quality === "high" ? new PlanarReflection() : null), [quality]);
-  const material = useMemo(() => {
-    const base = new MeshStandardMaterial({ map: marbleMap, aoMap: ao, color: "#d6c9b4", roughness: reflection ? 0.2 : 0.22, metalness: 0 });
-    return reflection ? makeReflective(base, reflection) : base;
-  }, [marbleMap, ao, reflection]);
+  const material = useMemo(() => marbleMaterial(floorMarble, ao, reflection), [floorMarble, ao, reflection]);
   useEffect(
     () => () => {
       material.dispose();

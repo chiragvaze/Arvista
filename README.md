@@ -26,7 +26,20 @@ To add a painting:
    - To remove unpainted canvas from a photograph, add a measured crop for that painting to `CROPS` in `scripts/optimize-artworks.mjs`. Crops are never detected automatically. *The Silent Ruler* uses one (see the comment there).
 3. Add an entry to `paintings.ts` with the same `id`: title, medium, `creationDate` (YYYY-MM-DD), `dimensions` as written, `physicalSize` in cm, description and order.
 
-Physical size sets each painting's size relative to the others (all share one display scale). Every mat has the same absolute width, so a smaller canvas gets a proportionally wider mat rather than being enlarged, and the camera views each painting from a distance derived from its frame size, so a small work still fills the screen.
+Physical size sets each painting's size relative to the others (all share one display scale). Mats are a share of each painting's height, a little more for smaller canvases, so a small work reads as deliberately presented rather than enlarged, and the camera views each painting from a distance derived from its frame size, so a small work still fills the screen.
+
+## Material textures
+
+The limestone, marble and walnut textures in `public/textures/` come from [ambientCG](https://ambientcg.com), licensed CC0 1.0 (no attribution required; credited here anyway):
+
+| Texture | ambientCG asset | Used for |
+| --- | --- | --- |
+| `marble-ivory-*` | [Marble014](https://ambientcg.com/a/Marble014) | pale floor marble |
+| `marble-nero-*` | [Marble016](https://ambientcg.com/a/Marble016) | dark border, baseboards and plinths |
+| `walnut-*` | [Wood051](https://ambientcg.com/a/Wood051) | doors, frames and bench |
+| `limestone-*` | [Plaster001](https://ambientcg.com/a/Plaster001) | walls and stone mouldings (tinted ivory) |
+
+To regenerate them, download each asset's `1K-JPG` pack, extract each into a folder named after the asset, and run `node scripts/optimize-textures.mjs <folder containing them>`. The script keeps only the colour, normal and roughness maps the scene uses and writes WebP (about 1.3 MB in total). The palms, fluting, linen, inscription and skylight glazing are still drawn procedurally.
 
 ## Structure
 
@@ -43,7 +56,7 @@ src/
     cameraWaypoints.ts      camera route generated from the layout; spline/slerp camera rig
     scrollTimeline.ts       timeline plan, chapters and the GSAP timeline built from the route
     motion.ts               shared animation values (scroll → scene)
-    geometry.ts, textures.ts  arch/frame builders, procedural surfaces
+    geometry.ts, textures.ts  arch/frame builders; procedural textures (palm fronds, fluting, linen, glazing, inscription)
     lightmaps.ts            baked light and contact shadows (canvas light/AO maps) for walls, vault, facades and floor
     deviceTier.ts, clientEnvironment.ts  WebGL, quality tier, reduced motion
   components/museum/        3D scene (canvas, entrance, doors, corridor, planters, floor inlay, painting, camera, reflection probe)
