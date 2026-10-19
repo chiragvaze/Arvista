@@ -26,7 +26,12 @@ import styles from "./overlay/overlay.module.css";
 // three.js and the scene graph load in a separate client-only chunk.
 const MuseumCanvas = dynamic(() => import("./MuseumCanvas"), { ssr: false });
 
-const SLOW_LOAD_MS = 12000;
+/**
+ * When the loading screen offers the collection without 3D. A first visit compiles every shader from cold,
+ * which takes 12–20 s on an Intel UHD 620 (about 12 s on an idle machine, up to 20 s with background load),
+ * so the notice waits beyond that: it is for a load that has genuinely stalled, not a normal first visit.
+ */
+const SLOW_LOAD_MS = 25000;
 
 /**
  * Orchestrates the walkthrough: a tall scroll track with a sticky stage holding

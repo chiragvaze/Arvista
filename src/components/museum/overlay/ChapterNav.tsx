@@ -4,7 +4,9 @@ import styles from "./overlay.module.css";
 
 /**
  * Keyboard-accessible alternative to scrolling: jump to any point of the walk.
- * The vertical line shows overall progress through the sequence.
+ * The vertical line shows overall progress through the sequence. Each button is
+ * named by aria-label, because its visible label is only shown on hover or focus
+ * (and not at all on narrow screens).
  */
 export function ChapterNav({
   chapters,
@@ -28,10 +30,13 @@ export function ChapterNav({
             <button
               type="button"
               className={styles.chapterButton}
+              aria-label={chapter.label}
               aria-current={chapter.id === active ? "step" : undefined}
               onClick={() => onSelect(chapter)}
             >
-              <span className={styles.chapterLabel}>{chapter.label}</span>
+              <span className={styles.chapterLabel} aria-hidden="true">
+                {chapter.label}
+              </span>
               <span className={styles.chapterDot} aria-hidden="true" />
             </button>
           </li>

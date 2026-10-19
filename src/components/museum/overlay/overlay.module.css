@@ -425,11 +425,13 @@
   gap: 1.1rem;
 }
 
+/* The button is just the dot and its padding: the label is drawn outside it (see .chapterLabel), so the
+   clickable area never reaches over the painting label beside the dots. */
 .chapterButton {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.75rem;
   width: 100%;
   min-height: 1.8rem;
   padding: 0 0.6rem 0 0.4rem;
@@ -443,7 +445,13 @@
   cursor: pointer;
 }
 
+/* Out of the button's layout and hit area; placed where it sat before, 0.75rem left of the dot. */
 .chapterLabel {
+  position: absolute;
+  top: 50%;
+  right: calc(100% - 0.4rem + 0.75rem);
+  translate: 0 -50%;
+  pointer-events: none;
   padding: 0.25rem 0.5rem;
   background: rgb(17 12 8 / 0.88);
   opacity: 0;
@@ -703,6 +711,116 @@
     padding-left: 0.2em;
     line-height: 1.7;
     text-wrap: balance;
+  }
+}
+
+/* Short landscape screens (phones turned sideways). The camera keeps its landscape framing, which places the
+   painting just left of centre: its frame ends about 10% of the screen height right of centre. The label sits
+   in the space between the frame and the chapter dots, below the collection link, in a compact setting. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .panel {
+    --panel-top: calc(max(clamp(0.75rem, 2.2vh, 1.4rem), env(safe-area-inset-top)) + 44px + 0.5rem);
+    --panel-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    top: var(--panel-top);
+    bottom: var(--panel-bottom);
+    left: calc(50% + 10dvh + 0.5rem);
+    right: calc(max(clamp(1rem, 2.2vw, 2rem), env(safe-area-inset-right)) + 44px + 0.75rem);
+    width: auto;
+    max-height: calc(100% - var(--panel-top) - var(--panel-bottom));
+    margin-block: auto;
+    padding: 0.7rem 0.9rem 0;
+    outline-offset: -5px;
+  }
+
+  .panelIndex {
+    margin-bottom: 0.3rem;
+    font-size: 0.64rem;
+  }
+
+  .panelTitle {
+    margin-bottom: 0.3rem;
+    font-size: 1.25rem;
+  }
+
+  .panelLead {
+    margin-bottom: 0.3rem;
+    font-size: 0.88rem;
+    line-height: 1.32;
+  }
+
+  .panelBody {
+    font-size: 0.8rem;
+    line-height: 1.42;
+  }
+
+  .panelDivider {
+    margin: 0.4rem 0 0.35rem;
+  }
+
+  .panelFacts {
+    gap: 0.2rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .panelFact {
+    grid-template-columns: 5.6rem 1fr;
+    gap: 0.4rem;
+  }
+
+  .panelFact dt {
+    letter-spacing: 0.14em;
+  }
+
+  .panelFact dd {
+    font-size: 0.8rem;
+  }
+
+  .chapters {
+    right: max(clamp(1rem, 2.2vw, 2rem), env(safe-area-inset-right));
+  }
+}
+
+/* Where the label can be taller than the space for it (very narrow phones, short landscape screens), its
+   controls stay pinned to the foot of the card and the text scrolls above them, so Previous and Next never
+   need scrolling to. A compact setting keeps both controls on one line. */
+@media (max-width: 360px), (orientation: landscape) and (max-height: 500px) {
+  .panel {
+    padding-bottom: 0;
+  }
+
+  .panelActions {
+    position: sticky;
+    bottom: 0;
+    flex-wrap: nowrap;
+    margin-inline: -0.9rem;
+    padding: 0.55rem 0.9rem 0.7rem;
+    background: linear-gradient(180deg, rgb(245 240 230 / 0), #f5f0e6 0.55rem);
+  }
+
+  .panelBack,
+  .panelNext {
+    gap: 0.45rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+  }
+
+  .panelNext {
+    padding: 0 0.85rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .panelActions {
+    margin-inline: -1.25rem;
+    padding-inline: 1.25rem;
+  }
+
+  /* The closing card is tall enough here to reach the column of chapter dots: keep it clear of their 44 px.
+     Shifted with a margin, not `translate`: GSAP takes over the card's transforms when it animates it. */
+  .finale {
+    width: calc(100% - 2rem - 44px);
+    margin-left: -22px;
   }
 }
 
