@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo } from "react";
+import { useContext, useLayoutEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import {
   Color,
@@ -16,6 +16,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import { useMuseumMaterials } from "./materials";
+import { ContextRestorations } from "./helpers";
 
 /** A light panel: [position, [width, height], colour, intensity]. Each faces the origin. */
 type Panel = [[number, number, number], [number, number], string, number];
@@ -119,10 +120,15 @@ function applyPanels(gl: WebGLRenderer, panels: readonly Panel[], targets: reado
   };
 }
 
-/** Lights the materials with the panels while the component is mounted. */
+/**
+ * Lights the materials with the panels while the component is mounted. Drawn again (into a new cube map, the
+ * old one freed) after a WebGL context restore, which leaves the drawn one blank.
+ */
 function usePanelEnvironment(panels: readonly Panel[], targets: readonly [MeshStandardMaterial, number][]) {
   const gl = useThree((s) => s.gl);
-  useLayoutEffect(() => applyPanels(gl, panels, targets), [gl, panels, targets]);
+  const restorations = useContext(ContextRestorations);
+  // `restorations` is only a trigger: each restore draws the panels again.
+  useLayoutEffect(() => applyPanels(gl, panels, targets), [gl, panels, targets, restorations]);
 }
 
 /**

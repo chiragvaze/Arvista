@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { createContext, useEffect, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { Euler, InstancedMesh, Matrix4, Object3D, Quaternion, Vector3, type BufferGeometry, type Group, type Light, type Material } from "three";
 import { bevelledBox } from "@/lib/museum/geometry";
 
@@ -20,6 +20,14 @@ export interface InstanceTransform {
   rotation?: readonly [number, number, number];
   scale?: readonly [number, number, number];
 }
+
+/**
+ * How many times the WebGL context has been restored after a loss (counted by MuseumScene). three re-uploads
+ * textures and geometry by itself after a restore, but not what was drawn into render targets: resources that
+ * are drawn once rather than every frame (the light-panel cube maps, the environment, the shadow map) come back
+ * blank, so their owners depend on this count to draw them again.
+ */
+export const ContextRestorations = createContext(0);
 
 /**
  * Render layer for what the marble floor's reflection leaves out: the floor
