@@ -821,15 +821,19 @@
 }
 
 /* Phones narrower than about 810 px when turned sideways leave the card too narrow for both controls on one
-   line (they need about 16.3rem): Next moves to a full-width line of its own instead of being cut off. */
-@container (max-width: 16rem) {
-  .panelActions {
-    flex-wrap: wrap;
-    row-gap: 0.35rem;
-  }
+   line (they need about 16.3rem): Next moves to a full-width line of its own instead of being cut off.
+   Scoped to the screens whose card is a container: an unscoped @container rule made Chrome's first layout of the
+   page take about 0.3 s longer on every screen, though no other screen has a container. */
+@media (orientation: landscape) and (max-height: 500px) {
+  @container (max-width: 16rem) {
+    .panelActions {
+      flex-wrap: wrap;
+      row-gap: 0.35rem;
+    }
 
-  .panelNext {
-    flex: 1 0 100%;
+    .panelNext {
+      flex: 1 0 100%;
+    }
   }
 }
 
