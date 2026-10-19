@@ -89,6 +89,15 @@ export interface TimelineTargets {
 
 let registered = false;
 
+/**
+ * When a scroll update counts as a jump (the camera cuts) rather than a scroll (the camera catches up): it
+ * moves more than JUMP.viewports viewport heights and either arrives after JUMP.idleMs without any update (an
+ * in-page link) or moves more than JUMP.anyViewports in one go. Wheel and touch scrolling move a fraction of a
+ * viewport per update; the chapter buttons' smooth scrolling can move 3.5 viewports per update when frames are
+ * slow (measured at 25 fps on an Intel UHD 620), but in a stream of updates a frame apart.
+ */
+const JUMP = { viewports: 3, idleMs: 100, anyViewports: 12 } as const;
+
 export interface MuseumTimeline {
   timeline: gsap.core.Timeline;
   dispose(): void;
@@ -108,6 +117,8 @@ export function createMuseumTimeline(t: TimelineTargets): MuseumTimeline {
     registered = true;
   }
   const v = t.store.values;
+  let lastProgress: number | null = null;
+  let lastUpdate = 0;
   const tl = gsap.timeline({
     defaults: { ease: "none" },
     scrollTrigger: {
@@ -117,7 +128,21 @@ export function createMuseumTimeline(t: TimelineTargets): MuseumTimeline {
       // A short catch-up turns wheel steps into continuous motion without the camera trailing the scrollbar;
       // with reduced motion it follows the scrollbar exactly.
       scrub: t.reducedMotion ? true : 0.6,
-      onUpdate: (self) => t.onTime(self.progress * TIMELINE_LENGTH),
+      onUpdate: (self) => {
+        // A jump rather than a scroll (see JUMP; e.g. the in-page link "Return to the entrance") cuts
+        // straight to the new point of the walk. Left to the catch-up, the camera would race through
+        // everything in between, at hundreds of metres per second. ScrollTrigger has already aimed its
+        // catch-up at the new position, so finishing it lands exactly there. (With reduced motion there is no
+        // catch-up and getTween() returns 0: the camera already follows the scrollbar exactly.)
+        const now = performance.now();
+        const moved = lastProgress === null ? 0 : (Math.abs(self.progress - lastProgress) * (self.end - self.start)) / window.innerHeight;
+        const jumped = moved > JUMP.viewports && (now - lastUpdate > JUMP.idleMs || moved > JUMP.anyViewports);
+        lastProgress = self.progress;
+        lastUpdate = now;
+        const catchUp = self.getTween();
+        if (catchUp && jumped) catchUp.progress(1);
+        t.onTime(self.progress * TIMELINE_LENGTH);
+      },
     },
     onUpdate: () => {
       v.time = tl.time();
