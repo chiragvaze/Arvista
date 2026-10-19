@@ -12,7 +12,7 @@ import { ScrollIndicator } from "./ScrollIndicator";
 export function EntranceHero({ ref }: { ref?: Ref<HTMLDivElement> }) {
   return (
     <div ref={ref} className={styles.hero}>
-      <h1 className={styles.visuallyHidden}>
+      <h1 className={styles.visuallyHidden} tabIndex={-1}>
         {GALLERY.name} — {GALLERY.subtitle}. {ARTIST.attribution}.
       </h1>
       <p className={styles.heroAttribution} aria-hidden="true">

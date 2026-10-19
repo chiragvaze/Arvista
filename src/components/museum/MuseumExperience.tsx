@@ -97,6 +97,26 @@ export function MuseumExperience() {
     [reducedMotion],
   );
   const onSelectChapter = useCallback((c: Chapter) => goTo(c.time), [goTo]);
+
+  // The Previous and Next buttons belong to the panel they leave, which the timeline hides on the way (and the
+  // browser then drops focus to the page). Keyboard users are taken to the heading of where they arrive.
+  const cancelFocus = useRef<(() => void) | null>(null);
+  useEffect(() => () => cancelFocus.current?.(), []);
+  const goToChapter = useCallback(
+    (c: Chapter, keyboard: boolean) => {
+      cancelFocus.current?.();
+      cancelFocus.current = null;
+      goTo(c.time);
+      if (!keyboard) return;
+      // Chapters are [entrance, painting 1 … painting n, next hall].
+      const index = CHAPTERS.indexOf(c);
+      const container =
+        index === 0 ? heroRef.current : index === CHAPTERS.length - 1 ? finaleRef.current : panelRefs.current[index - 1];
+      const heading = container?.querySelector<HTMLElement>("h1, h2");
+      if (container && heading) cancelFocus.current = focusWhenShown(heading, container);
+    },
+    [goTo],
+  );
   const onReady = useCallback(() => setReady(true), []);
   const onError = useCallback((error: Error) => {
     console.error("[ARVISTA] 3D scene unavailable:", error.message);
@@ -154,8 +174,8 @@ export function MuseumExperience() {
               total={total}
               previousLabel={i === 0 ? "Entrance" : "Previous"}
               continueLabel={next.id === "next-hall" ? "Continue" : "Next painting"}
-              onPrevious={() => goTo(previous.time)}
-              onContinue={() => goTo(next.time)}
+              onPrevious={(keyboard) => goToChapter(previous, keyboard)}
+              onContinue={(keyboard) => goToChapter(next, keyboard)}
             />
           );
         })}
@@ -168,4 +188,29 @@ export function MuseumExperience() {
       </div>
     </section>
   );
+}
+
+/** Inputs that mean the visitor has taken over, so a pending focus move no longer applies. */
+const TAKE_OVER_EVENTS = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
+
+/**
+ * Focuses `target` as soon as `container` is shown (the scroll timeline reveals it by writing its inline
+ * style), without scrolling, since the scroll position drives the camera. Gives up if the visitor scrolls,
+ * touches, clicks or presses a key first. Returns a function that cancels it.
+ */
+function focusWhenShown(target: HTMLElement, container: HTMLElement): () => void {
+  const observer = new MutationObserver(() => tryFocus());
+  const cancel = () => {
+    observer.disconnect();
+    for (const type of TAKE_OVER_EVENTS) window.removeEventListener(type, cancel, true);
+  };
+  const tryFocus = () => {
+    if (getComputedStyle(container).visibility !== "visible") return;
+    target.focus({ preventScroll: true });
+    cancel();
+  };
+  observer.observe(container, { attributes: true, attributeFilter: ["style"] });
+  for (const type of TAKE_OVER_EVENTS) window.addEventListener(type, cancel, { capture: true, passive: true });
+  tryFocus();
+  return cancel;
 }

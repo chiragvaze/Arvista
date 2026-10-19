@@ -34,8 +34,9 @@ export function PaintingInformation({
   total: number;
   previousLabel: string;
   continueLabel: string;
-  onPrevious: () => void;
-  onContinue: () => void;
+  /** `keyboard` is true when activated from the keyboard or assistive technology rather than a pointer. */
+  onPrevious: (keyboard: boolean) => void;
+  onContinue: (keyboard: boolean) => void;
 }) {
   const { lead, body } = splitDescription(painting.description);
   const facts: [string, string][] = [];
@@ -55,7 +56,8 @@ export function PaintingInformation({
         <span className={styles.diamond} aria-hidden="true" />
       </p>
       {painting.isPlaceholder && <p className={styles.panelBadge}>Example entry · replace with your painting</p>}
-      <h2 id={`panel-${painting.id}`} className={styles.panelTitle}>
+      {/* Focusable from script only (not a tab stop): keyboard navigation between paintings lands here. */}
+      <h2 id={`panel-${painting.id}`} className={styles.panelTitle} tabIndex={-1}>
         {painting.title}
       </h2>
       {lead && <p className={styles.panelLead}>{lead}</p>}
@@ -72,10 +74,11 @@ export function PaintingInformation({
         ))}
       </dl>
       <div className={styles.panelActions}>
-        <button type="button" className={styles.panelBack} onClick={onPrevious}>
+        {/* A click with detail 0 came from the keyboard (or assistive technology), not a pointer. */}
+        <button type="button" className={styles.panelBack} onClick={(event) => onPrevious(event.detail === 0)}>
           <span aria-hidden="true">←</span> {previousLabel}
         </button>
-        <button type="button" className={styles.panelNext} onClick={onContinue}>
+        <button type="button" className={styles.panelNext} onClick={(event) => onContinue(event.detail === 0)}>
           {continueLabel} <span aria-hidden="true">→</span>
         </button>
       </div>

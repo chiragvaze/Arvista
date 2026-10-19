@@ -7,7 +7,7 @@ export function ArtistFinale({ ref }: { ref?: Ref<HTMLElement> }) {
   return (
     <aside ref={ref} className={styles.finale} aria-labelledby="finale-title">
       <p className={styles.finaleEyebrow}>The artist behind {GALLERY.name}</p>
-      <h2 id="finale-title" className={styles.finaleName}>
+      <h2 id="finale-title" className={styles.finaleName} tabIndex={-1}>
         {ARTIST.name}
       </h2>
       <div className={styles.panelDivider} aria-hidden="true">
