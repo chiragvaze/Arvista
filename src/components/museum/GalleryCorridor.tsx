@@ -35,6 +35,8 @@ const BAYS = Array.from({ length: CORRIDOR.bayCount }, (_, i) => bayCenterZ(i));
 
 /** Strength of the soft fill on the corridor's stone (see useStoneFill). */
 const STONE_FILL_INTENSITY = 0.42;
+/** Strength of the same fill on the palm fronds (thin leaves lit from all around). */
+const FROND_FILL_INTENSITY = 0.75;
 
 /** Dark marble baseboard with a limestone cap, as in the reference walls. */
 const BASEBOARD = { height: 0.42, depth: 0.07, cap: 0.05 } as const;
@@ -315,14 +317,17 @@ export function GalleryCorridor() {
     };
   });
   // Mouldings, pilasters, ribs and skylight frames have no baked light, so they take a soft fill from above
-  // (see useStoneFill): their top faces catch it and their undersides stay in shade.
+  // (see useStoneFill): their top faces catch it and their undersides stay in shade. The palms take the same
+  // fill, more strongly: their undersides face the pale floor and walls, and with only the faint scene-wide
+  // fill they fell to black silhouettes against the lit stone.
   const stoneFill = useMemo(
     (): [MeshStandardMaterial, number][] => [
       [surfaces.stone, STONE_FILL_INTENSITY],
       [surfaces.pilaster, STONE_FILL_INTENSITY],
       [surfaces.trim, STONE_FILL_INTENSITY],
+      [m.frond, FROND_FILL_INTENSITY],
     ],
-    [surfaces],
+    [surfaces, m.frond],
   );
   useStoneFill(stoneFill);
 

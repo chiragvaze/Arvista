@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PerspectiveCamera } from "three";
-import { BASE_FOV, CameraRig, cameraWaypoints } from "@/lib/museum/cameraWaypoints";
+import { BASE_FOV, CameraRig, cameraRoute } from "@/lib/museum/cameraWaypoints";
 import { DETAIL_LAYER } from "./helpers";
 import type { MotionStore } from "@/lib/museum/motion";
 
@@ -21,13 +21,13 @@ export function fovForAspect(aspect: number): number {
 
 /**
  * Places the camera on the waypoint path. The scroll timeline is the only writer
- * of `cameraT`; this component is the only writer of the camera transform.
+ * of `time`; this component is the only writer of the camera transform.
  */
 export function MuseumCamera({ store }: { store: MotionStore }) {
   const aspect = useThree((s) => s.size.width / Math.max(1, s.size.height));
   const get = useThree((s) => s.get);
   const portrait = aspect < PORTRAIT_ASPECT;
-  const rig = useMemo(() => new CameraRig(cameraWaypoints, portrait), [portrait]);
+  const rig = useMemo(() => new CameraRig(cameraRoute, portrait), [portrait]);
 
   useLayoutEffect(() => {
     const { camera, invalidate } = get();
@@ -44,7 +44,7 @@ export function MuseumCamera({ store }: { store: MotionStore }) {
   }, [aspect, get]);
 
   useFrame(({ camera }) => {
-    rig.sample(store.values.cameraT, camera.position, camera.quaternion);
+    rig.sample(store.values.time, camera.position, camera.quaternion);
   });
 
   return null;

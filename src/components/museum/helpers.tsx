@@ -22,11 +22,11 @@ export interface InstanceTransform {
 }
 
 /**
- * Render layer for small or floor-level details that the marble floor's
- * reflection leaves out. The visitor's camera renders this layer as well; only
- * the reflection camera (layer 0) skips it, which saves draw calls in a pass
- * that runs every frame without any visible difference in the blurred
- * reflection.
+ * Render layer for what the marble floor's reflection leaves out: the floor
+ * itself, and small or floor-level details that make no visible difference in
+ * the blurred reflection (leaving them out saves draw calls in a pass that runs
+ * every frame). The visitor's camera renders this layer as well; only the
+ * reflection camera (layer 0) skips it.
  */
 export const DETAIL_LAYER = 1;
 

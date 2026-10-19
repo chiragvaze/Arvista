@@ -1,4 +1,4 @@
-import { CanvasTexture, DataTexture, RepeatWrapping, SRGBColorSpace, NoColorSpace } from "three";
+import { CanvasTexture, DataTexture, RepeatWrapping, SRGBColorSpace, NoColorSpace, Texture } from "three";
 
 /**
  * Procedurally painted surface textures. Generated once on the client from a
@@ -52,8 +52,8 @@ function speckle(ctx: CanvasRenderingContext2D, size: number, rand: () => number
  * at the top of the canvas. The leaflets' droop comes from the frond geometry
  * (see Planter), which folds the frond into a shallow V along its midrib.
  */
-let frondCache: CanvasTexture | null = null;
-export function getFrondTexture(): CanvasTexture {
+let frondCache: Texture | null = null;
+export function getFrondTexture(): Texture {
   if (frondCache) return frondCache;
   const w = 256;
   const h = 1024;
@@ -68,8 +68,9 @@ export function getFrondTexture(): CanvasTexture {
   const firstLeaflet = 0.8 * h;
   const tip = 0.02 * h;
 
-  // Leaflets first, so the midrib is drawn over their bases.
-  for (let y = firstLeaflet; y > tip; y -= 15 + rand() * 4) {
+  // Leaflets first, so the midrib is drawn over their bases. Closely set, so the frond reads as one feathery
+  // blade from across the room rather than a sparse comb.
+  for (let y = firstLeaflet; y > tip; y -= 10 + rand() * 3) {
     const t = (firstLeaflet - y) / (firstLeaflet - tip);
     const reach = Math.pow(Math.sin(Math.PI * (0.12 + 0.82 * t)), 0.6) * (w * 0.47) + 10;
     for (const side of [-1, 1]) {
@@ -78,7 +79,7 @@ export function getFrondTexture(): CanvasTexture {
       const angle = (0.62 + 0.35 * t + (rand() - 0.5) * 0.12) * (Math.PI / 2);
       const ex = cx + side * Math.cos(Math.PI / 2 - angle) * length;
       const ey = y - Math.sin(Math.PI / 2 - angle) * length * 0.55 - length * 0.35;
-      const width = 4 + (1 - Math.abs(t - 0.45)) * 4;
+      const width = 7 + (1 - Math.abs(t - 0.45)) * 6;
       const g = 64 + Math.floor(rand() * 34);
       ctx.fillStyle = `rgb(${26 + Math.floor(rand() * 18)}, ${g}, ${26 + Math.floor(rand() * 14)})`;
       // A slender lanceolate leaflet: widest a third of the way along, tapering to a point.
@@ -107,10 +108,100 @@ export function getFrondTexture(): CanvasTexture {
     const half = 3.4 - t * 2.4;
     ctx.fillRect(cx - half, y - 4, half * 2, 5);
   }
-  frondCache = new CanvasTexture(canvas);
+  const levels = cutoutMipmaps(ctx.getImageData(0, 0, w, h), FROND_ALPHA_TEST);
+  frondCache = new Texture(levels[0]);
+  frondCache.mipmaps = levels;
+  frondCache.generateMipmaps = false;
   frondCache.colorSpace = SRGBColorSpace;
   frondCache.anisotropy = 4;
+  frondCache.needsUpdate = true;
   return frondCache;
+}
+
+/** Alpha below which a frond's leaflets are cut away (the frond material's alphaTest). */
+export const FROND_ALPHA_TEST = 0.5;
+
+/**
+ * Mipmaps for a cut-out (alpha-tested) image, built on the CPU instead of by
+ * the GPU, which would spoil them in two ways. Its transparent pixels are
+ * black, so averaging darkens every edge and a distant leaflet turns almost
+ * black. And averaging thins alpha, so at each smaller size fewer pixels pass
+ * the alpha test and thin shapes break up into dashes. Here transparent pixels
+ * take the image's mean colour, colour is averaged by alpha, and each level's
+ * alpha is rescaled so the same share of it passes the test as at full size.
+ * Level 0 is the image itself; dimensions must be powers of two.
+ */
+function cutoutMipmaps(base: ImageData, alphaTest: number): ImageData[] {
+  const px = base.data;
+  // Mean colour of the visible pixels, given to the transparent ones.
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let n = 0;
+  for (let i = 0; i < px.length; i += 4) {
+    if (px[i + 3] < 128) continue;
+    r += px[i];
+    g += px[i + 1];
+    b += px[i + 2];
+    n++;
+  }
+  const mean = n ? [r / n, g / n, b / n] : [0, 0, 0];
+  for (let i = 0; i < px.length; i += 4) {
+    if (px[i + 3] > 0) continue;
+    px[i] = mean[0];
+    px[i + 1] = mean[1];
+    px[i + 2] = mean[2];
+  }
+  // Share of the full-size image that passes the alpha test.
+  const threshold = alphaTest * 255;
+  let passed = 0;
+  for (let i = 3; i < px.length; i += 4) if (px[i] >= threshold) passed++;
+  const target = passed / (px.length / 4);
+  const levels = [base];
+  let src = base;
+  while (src.width > 1 || src.height > 1) {
+    const w = Math.max(1, src.width >> 1);
+    const h = Math.max(1, src.height >> 1);
+    const out = new ImageData(w, h);
+    const d = out.data;
+    const s = src.data;
+    const alphas = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let cr = 0;
+        let cg = 0;
+        let cb = 0;
+        let ca = 0;
+        for (let dy = 0; dy < 2; dy++) {
+          for (let dx = 0; dx < 2; dx++) {
+            const sx = Math.min(src.width - 1, x * 2 + dx);
+            const sy = Math.min(src.height - 1, y * 2 + dy);
+            const i = (sy * src.width + sx) * 4;
+            // Weighted by alpha, plus one so a fully transparent block still averages its (mean-coloured) pixels.
+            const a = s[i + 3] + 1;
+            cr += s[i] * a;
+            cg += s[i + 1] * a;
+            cb += s[i + 2] * a;
+            ca += a;
+          }
+        }
+        const o = (y * w + x) * 4;
+        d[o] = cr / ca;
+        d[o + 1] = cg / ca;
+        d[o + 2] = cb / ca;
+        d[o + 3] = ca / 4 - 1;
+        alphas[y * w + x] = d[o + 3];
+      }
+    }
+    // Scale alpha so that the share of pixels at or above the threshold matches full size.
+    alphas.sort();
+    const reference = alphas[Math.max(0, alphas.length - Math.max(1, Math.round(target * alphas.length)))];
+    const scale = reference > 0 ? Math.max(1, threshold / reference) : 1;
+    if (scale > 1) for (let i = 3; i < d.length; i += 4) d[i] = Math.min(255, d[i] * scale);
+    levels.push(out);
+    src = out;
+  }
+  return levels;
 }
 
 /**

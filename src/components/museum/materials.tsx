@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
-import { useTexture } from "@react-three/drei";
+import { useLoader } from "@react-three/fiber";
 import {
   AdditiveBlending,
   BackSide,
@@ -14,11 +14,19 @@ import {
   RepeatWrapping,
   SRGBColorSpace,
   SpriteMaterial,
+  TextureLoader,
   Vector2,
   type Texture,
 } from "three";
 import { fitToMetres, type BakedLight } from "@/lib/museum/lightmaps";
-import { getDetailTextures, getFrondTexture, getGlowTexture, getSkylightTexture, getSoftShadowTexture } from "@/lib/museum/textures";
+import {
+  FROND_ALPHA_TEST,
+  getDetailTextures,
+  getFrondTexture,
+  getGlowTexture,
+  getSkylightTexture,
+  getSoftShadowTexture,
+} from "@/lib/museum/textures";
 
 /**
  * Photographed material textures in public/textures, from ambientCG (CC0 1.0),
@@ -217,12 +225,16 @@ function createMaterials(tx: TextureSet): MuseumMaterials {
     mat: new MeshStandardMaterial({ color: "#fbf7ee", map: linen, roughness: 0.97 }),
     matCore: new MeshStandardMaterial({ color: "#f8f3ea", roughness: 0.9 }),
     ceramic: new MeshStandardMaterial({ color: "#2c2622", roughness: 0.38 }),
-    // Palm leaflets: deep green with a slight waxy sheen; both faces are seen.
+    // Palm leaflets: deep green with a slight waxy sheen; both faces are seen. Alpha to coverage turns the
+    // leaflets' cut-out edges into multisampled coverage, so they are antialiased like geometry instead of
+    // stair-stepped (the canvas is multisampled; no extra pass or draw call). The texture's own mipmaps keep
+    // distant leaflets green and whole (see getFrondTexture).
     frond: new MeshStandardMaterial({
       map: getFrondTexture(),
-      alphaTest: 0.5,
+      alphaTest: FROND_ALPHA_TEST,
+      alphaToCoverage: true,
       side: DoubleSide,
-      roughness: 0.5,
+      roughness: 0.6,
     }),
     leather: new MeshStandardMaterial({ color: "#3a271d", roughness: 0.5 }),
     floorMarble: {
@@ -265,14 +277,22 @@ export function bakedStoneMaterial(
   return material;
 }
 
+const TEXTURE_KEYS = Object.keys(TEXTURE_URLS) as (keyof typeof TEXTURE_URLS)[];
+
 export function MaterialsProvider({ children }: { children: ReactNode }) {
-  const textures = useTexture(TEXTURE_URLS) as TextureSet;
-  const materials = useMemo(() => createMaterials(textures), [textures]);
+  // Loaded with useLoader rather than drei's useTexture, which uploads every image to the GPU on arrival. The
+  // materials only draw tiled copies, whose wrapping, colour space and anisotropy give them GPU textures of their
+  // own, so uploading the originals as well cost main-thread time while loading and ~36 MB of GPU memory.
+  const loaded = useLoader(TextureLoader, TEXTURE_KEYS.map((key) => TEXTURE_URLS[key]));
+  const materials = useMemo(
+    () => createMaterials(Object.fromEntries(TEXTURE_KEYS.map((key, i) => [key, loaded[i]])) as TextureSet),
+    [loaded],
+  );
   useEffect(
     () => () => {
       for (const value of Object.values(materials)) {
         if (value instanceof MeshStandardMaterial) {
-          // The tiled copies; the loaded originals stay in drei's texture cache.
+          // The tiled copies; the loaded originals stay in the loader's cache.
           [value.map, value.bumpMap, value.normalMap, value.roughnessMap].forEach((t) => t?.dispose());
           value.dispose();
         } else if ("dispose" in value) {

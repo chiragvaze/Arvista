@@ -4,8 +4,8 @@
  * triggers React re-renders; only one writer (the GSAP timeline) touches them.
  */
 export interface MuseumMotionValues {
-  /** Camera position along the waypoint path, in waypoint units. */
-  cameraT: number;
+  /** Position on the scroll timeline (after scrub smoothing), in timeline units; the camera rig turns it into a pose. */
+  time: number;
   /** Door opening, 0 = closed, 1 = fully open. */
   doorOpen: number;
 }
@@ -19,7 +19,7 @@ export interface MotionStore {
 }
 
 export function createMotionStore(): MotionStore {
-  const values: MuseumMotionValues = { cameraT: 0, doorOpen: 0 };
+  const values: MuseumMotionValues = { time: 0, doorOpen: 0 };
   const listeners = new Set<() => void>();
   return {
     values,

@@ -24,10 +24,10 @@ export interface RouteStep {
   id: string;
   duration: number;
   to?: number;
-  /** Path speed (metres per timeline unit) at the start and end of a moving step; the timeline eases between them. */
+  /** Path speed (metres per timeline unit) at the start and end of a moving step; the camera rig eases between them. */
   startSpeed?: number;
   endSpeed?: number;
-  /** Path length of a moving step in metres. */
+  /** Straight-line length of a moving step in metres, from which its duration is set. */
   length?: number;
   /** Index into galleryLayout of the painting whose information is shown during this step. */
   paintingIndex?: number;
@@ -170,33 +170,131 @@ export const cameraRoute: CameraRoute = buildCameraRoute(galleryLayout);
 export const cameraWaypoints = cameraRoute.waypoints;
 
 const UP = new Vector3(0, 1, 0);
-/** Samples per segment for the arc-length table. */
-const ARC_SAMPLES = 48;
+/**
+ * Samples per segment for the distance and turn-angle tables. Lookups interpolate linearly between samples, so
+ * the rate of motion steps slightly at each sample; this many keeps those steps well below a degree per second.
+ */
+const ARC_SAMPLES = 256;
 
 /**
- * Samples a smooth camera path through the waypoints.
+ * Cubic ease whose slope is `startSlope` at 0 and `endSlope` at 1 (in units of
+ * the segment's average speed). Adjacent segments are given matching speeds, so
+ * the camera never jumps in speed where one segment hands over to the next.
+ * Slopes are capped at 3, which keeps the curve monotonic (no backtracking).
+ */
+function matchedSpeedEase(startSlope: number, endSlope: number): (u: number) => number {
+  const a = Math.min(3, Math.max(0, startSlope));
+  const b = Math.min(3, Math.max(0, endSlope));
+  return (u) => {
+    const u2 = u * u;
+    const u3 = u2 * u;
+    return (u3 - 2 * u2 + u) * a + (-2 * u3 + 3 * u2) + (u3 - u2) * b;
+  };
+}
+
+/**
+ * Smooth (C1) interpolation through (times[k], values[k]) for values that never
+ * decrease, with Fritsch-Butland slopes: it never overshoots, so the value never
+ * runs backwards, and it stays exactly constant across a run of equal values.
+ */
+class MonotoneCurve {
+  private readonly slopes: number[];
+
+  constructor(
+    private readonly times: readonly number[],
+    private readonly values: readonly number[],
+  ) {
+    const secant = (k: number) => (values[k + 1] - values[k]) / (times[k + 1] - times[k]);
+    this.slopes = times.map((_, k) => {
+      // The route starts and ends at rest.
+      if (k === 0 || k === times.length - 1) return 0;
+      const before = secant(k - 1);
+      const after = secant(k);
+      if (before <= 0 || after <= 0) return 0;
+      const h0 = times[k] - times[k - 1];
+      const h1 = times[k + 1] - times[k];
+      return (3 * (h0 + h1)) / ((2 * h1 + h0) / before + (h1 + 2 * h0) / after);
+    });
+  }
+
+  at(t: number): number {
+    const { times, values, slopes } = this;
+    const n = times.length;
+    if (t <= times[0]) return values[0];
+    if (t >= times[n - 1]) return values[n - 1];
+    let k = 0;
+    while (t > times[k + 1]) k++;
+    const h = times[k + 1] - times[k];
+    const s = (t - times[k]) / h;
+    const s2 = s * s;
+    const s3 = s2 * s;
+    return values[k] + (values[k + 1] - values[k]) * (3 * s2 - 2 * s3) + h * (slopes[k] * (s3 - 2 * s2 + s) + slopes[k + 1] * (s3 - s2));
+  }
+}
+
+/** Cumulative measure along one spline segment, normalised to 0..1, at evenly spaced parameter steps. */
+function normalise(table: Float32Array): number {
+  const total = table[ARC_SAMPLES];
+  for (let k = 1; k <= ARC_SAMPLES; k++) table[k] = total > 1e-6 ? table[k] / total : k / ARC_SAMPLES;
+  return total;
+}
+
+/** Converts a fraction of a segment's total (distance or turn) into the spline parameter within that segment. */
+function paramForFraction(table: Float32Array, fraction: number): number {
+  let lo = 0;
+  let hi = ARC_SAMPLES;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (table[mid] < fraction) lo = mid;
+    else hi = mid;
+  }
+  const span = table[hi] - table[lo];
+  const f = span > 1e-6 ? (fraction - table[lo]) / span : 0;
+  return (lo + f) / ARC_SAMPLES;
+}
+
+/** A moving step of the route on the scroll timeline: the segment it travels and how it eases along it. */
+interface TimedMove {
+  start: number;
+  end: number;
+  segment: number;
+  ease: (u: number) => number;
+}
+
+/**
+ * Turns a position on the scroll timeline into a camera pose.
  *
  * - Position follows a centripetal Catmull-Rom spline (no overshoot through
- *   walls). Within each segment the spline is re-parameterised by arc length,
- *   so a given fraction of scroll always covers the same fraction of distance
- *   and the camera moves at an even pace.
+ *   walls). Each moving step eases along its segment between the start and end
+ *   speeds the route gives it, measured on this path's own length (portrait
+ *   framing moves some waypoints), so the camera's speed carries over smoothly
+ *   wherever one step hands over to the next.
  * - The viewing direction follows its own smooth spline through each
- *   waypoint's look direction, so turns flow continuously from one waypoint to
- *   the next instead of stopping at each. Orientation is rebuilt with lookAt
- *   and a fixed world up every frame: the camera never rolls, and because
- *   neighbouring directions are always less than 180° apart it always turns the
- *   short way.
+ *   waypoint's look direction. How far along that spline the camera has turned
+ *   is a smooth function of timeline time through every waypoint, so the rate
+ *   of turning never jumps (even where the camera walks straight through a
+ *   waypoint), turns build up and settle gently, and the camera is still
+ *   whenever the route holds. Orientation is rebuilt with lookAt and a fixed
+ *   world up every frame: the camera never rolls, and because neighbouring
+ *   directions are always less than 180° apart it always turns the short way.
+ *
+ * At every waypoint the pose is exactly the waypoint's own.
  */
 export class CameraRig {
   private readonly positions: CatmullRomCurve3;
   private readonly directions: CatmullRomCurve3;
-  private readonly arcTables: Float32Array[];
+  private readonly arcTables: Float32Array[] = [];
+  private readonly turnTables: Float32Array[] = [];
+  /** Cumulative turn angle (radians) along the direction spline at each waypoint. */
+  private readonly turnAt: number[] = [0];
+  private readonly moves: TimedMove[] = [];
+  private readonly turn: MonotoneCurve;
   private readonly last: number;
   private readonly direction = new Vector3();
   private readonly lookTarget = new Vector3();
   private readonly matrix = new Matrix4();
 
-  constructor(waypoints: CameraWaypoint[], portrait: boolean) {
+  constructor({ waypoints, steps }: CameraRoute, portrait: boolean) {
     const positions = waypoints.map((w) => new Vector3(...((portrait && w.portrait?.position) || w.position)));
     const directions = waypoints.map((w, i) =>
       new Vector3(...((portrait && w.portrait?.target) || w.target)).sub(positions[i]).normalize(),
@@ -205,45 +303,80 @@ export class CameraRig {
     this.directions = new CatmullRomCurve3(directions, false, "centripetal");
     this.last = waypoints.length - 1;
 
-    // Cumulative arc length (normalised to 0..1) at evenly spaced parameter steps within each segment.
-    const a = new Vector3();
-    const b = new Vector3();
-    this.arcTables = Array.from({ length: this.last }, (_, i) => {
-      const table = new Float32Array(ARC_SAMPLES + 1);
-      this.positions.getPoint(i / this.last, a);
+    // Distance travelled and angle turned along each segment, at evenly spaced spline parameters.
+    const lengths: number[] = [];
+    const p0 = new Vector3();
+    const p1 = new Vector3();
+    const d0 = new Vector3();
+    const d1 = new Vector3();
+    for (let i = 0; i < this.last; i++) {
+      const arc = new Float32Array(ARC_SAMPLES + 1);
+      const turn = new Float32Array(ARC_SAMPLES + 1);
+      this.positions.getPoint(i / this.last, p0);
+      this.directions.getPoint(i / this.last, d0).normalize();
       for (let k = 1; k <= ARC_SAMPLES; k++) {
-        this.positions.getPoint((i + k / ARC_SAMPLES) / this.last, b);
-        table[k] = table[k - 1] + a.distanceTo(b);
-        a.copy(b);
+        const u = (i + k / ARC_SAMPLES) / this.last;
+        this.positions.getPoint(u, p1);
+        this.directions.getPoint(u, d1).normalize();
+        arc[k] = arc[k - 1] + p0.distanceTo(p1);
+        turn[k] = turn[k - 1] + d0.angleTo(d1);
+        p0.copy(p1);
+        d0.copy(d1);
       }
-      const total = table[ARC_SAMPLES];
-      for (let k = 1; k <= ARC_SAMPLES; k++) table[k] = total > 1e-6 ? table[k] / total : k / ARC_SAMPLES;
-      return table;
-    });
-  }
-
-  /** Converts a fraction of a segment's length into the spline parameter within that segment. */
-  private paramForDistance(segment: number, fraction: number): number {
-    const table = this.arcTables[segment];
-    let lo = 0;
-    let hi = ARC_SAMPLES;
-    while (hi - lo > 1) {
-      const mid = (lo + hi) >> 1;
-      if (table[mid] < fraction) lo = mid;
-      else hi = mid;
+      lengths.push(normalise(arc));
+      this.turnAt.push(this.turnAt[i] + normalise(turn));
+      this.arcTables.push(arc);
+      this.turnTables.push(turn);
     }
-    const span = table[hi] - table[lo];
-    const f = span > 1e-6 ? (fraction - table[lo]) / span : 0;
-    return (lo + f) / ARC_SAMPLES;
+
+    // Steps play back to back on the timeline, each moving step advancing one waypoint. The camera's turn
+    // reaches each waypoint's direction when the camera reaches the waypoint.
+    let time = 0;
+    let at = 0;
+    const knotTimes = [0];
+    const knotTurns = [0];
+    for (const step of steps) {
+      const start = time;
+      time += step.duration;
+      if (step.to !== undefined) {
+        const average = lengths[at] / step.duration;
+        const ease = average > 0 ? matchedSpeedEase((step.startSpeed ?? 0) / average, (step.endSpeed ?? 0) / average) : matchedSpeedEase(0, 0);
+        this.moves.push({ start, end: time, segment: at, ease });
+        at = step.to;
+      }
+      knotTimes.push(time);
+      knotTurns.push(this.turnAt[at]);
+    }
+    this.turn = new MonotoneCurve(knotTimes, knotTurns);
   }
 
-  /** t is in waypoint units: 0 = first waypoint, 1 = second, ...; the fraction is a share of the segment's length. */
-  sample(t: number, outPosition: Vector3, outQuaternion: Quaternion): void {
-    const clamped = Math.min(Math.max(t, 0), this.last);
-    const segment = Math.min(Math.floor(clamped), this.last - 1);
-    const param = (segment + this.paramForDistance(segment, clamped - segment)) / this.last;
-    this.positions.getPoint(param, outPosition);
-    this.directions.getPoint(param, this.direction).normalize();
+  /** `time` is the position on the scroll timeline, in timeline units. */
+  sample(time: number, outPosition: Vector3, outQuaternion: Quaternion): void {
+    // The step under way, or the waypoint the camera has come to rest at.
+    let segment = 0;
+    let fraction = 0;
+    for (const move of this.moves) {
+      if (time >= move.end) {
+        segment = move.segment;
+        fraction = 1;
+        continue;
+      }
+      if (time > move.start) {
+        segment = move.segment;
+        fraction = move.ease((time - move.start) / (move.end - move.start));
+      }
+      break;
+    }
+    this.positions.getPoint((segment + paramForFraction(this.arcTables[segment], fraction)) / this.last, outPosition);
+
+    // How far the camera has turned, located on the direction spline.
+    const turned = this.turn.at(time);
+    let i = 0;
+    while (i < this.last - 1 && turned > this.turnAt[i + 1]) i++;
+    const span = this.turnAt[i + 1] - this.turnAt[i];
+    const share = span > 1e-9 ? Math.min(1, Math.max(0, (turned - this.turnAt[i]) / span)) : 0;
+    this.directions.getPoint((i + paramForFraction(this.turnTables[i], share)) / this.last, this.direction).normalize();
+
     this.lookTarget.copy(outPosition).add(this.direction);
     outQuaternion.setFromRotationMatrix(this.matrix.lookAt(outPosition, this.lookTarget, UP));
   }

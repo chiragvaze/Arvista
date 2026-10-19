@@ -89,22 +89,6 @@ export interface TimelineTargets {
 
 let registered = false;
 
-/**
- * Cubic ease whose slope is `startSlope` at 0 and `endSlope` at 1 (in units of
- * the segment's average speed). Adjacent segments are given matching speeds, so
- * the camera never jumps in speed where one segment hands over to the next.
- * Slopes are capped at 3, which keeps the curve monotonic (no backtracking).
- */
-function matchedSpeedEase(startSlope: number, endSlope: number): (u: number) => number {
-  const a = Math.min(3, Math.max(0, startSlope));
-  const b = Math.min(3, Math.max(0, endSlope));
-  return (u) => {
-    const u2 = u * u;
-    const u3 = u2 * u;
-    return (u3 - 2 * u2 + u) * a + (-2 * u3 + 3 * u2) + (u3 - u2) * b;
-  };
-}
-
 export interface MuseumTimeline {
   timeline: gsap.core.Timeline;
   dispose(): void;
@@ -114,7 +98,8 @@ export interface MuseumTimeline {
  * Builds the single scrubbed timeline that drives the experience. GSAP only
  * writes plain numbers into the motion store and DOM overlay styles; the 3D
  * scene reads the store each frame, so no two systems animate the same property.
- * Scrolling backwards simply plays the timeline in reverse.
+ * The camera follows the timeline's own (smoothed) time: CameraRig turns it into
+ * a pose along the route. Scrolling backwards simply plays the timeline in reverse.
  */
 export function createMuseumTimeline(t: TimelineTargets): MuseumTimeline {
   if (!registered) {
@@ -134,7 +119,10 @@ export function createMuseumTimeline(t: TimelineTargets): MuseumTimeline {
       scrub: t.reducedMotion ? true : 0.6,
       onUpdate: (self) => t.onTime(self.progress * TIMELINE_LENGTH),
     },
-    onUpdate: () => t.store.notify(),
+    onUpdate: () => {
+      v.time = tl.time();
+      t.store.notify();
+    },
   });
 
   // Keep the timeline exactly TIMELINE_LENGTH long so scroll progress maps 1:1 to the plan.
@@ -145,19 +133,6 @@ export function createMuseumTimeline(t: TimelineTargets): MuseumTimeline {
   const doors = step("doors");
   tl.fromTo(v, { doorOpen: 0 }, { doorOpen: 1, duration: doors.duration - 0.5, ease: "power2.inOut" }, doors.start);
   tl.fromTo(t.hero, { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -24, duration: 0.8, ease: "power1.in" }, doors.start);
-
-  // Camera: one tween per moving step, each from the previous waypoint to the next. Explicit
-  // from-values keep segments deterministic however the page is entered or scrubbed; only the
-  // first renders immediately so later segments cannot overwrite the start pose at build time.
-  let waypoint = 0;
-  for (const s of TIMELINE_PLAN) {
-    if (s.to === undefined) continue;
-    // Slopes are the start/end speeds relative to the segment's average speed (length / duration).
-    const average = s.length && s.duration > 0 ? s.length / s.duration : 0;
-    const ease = average > 0 ? matchedSpeedEase((s.startSpeed ?? 0) / average, (s.endSpeed ?? 0) / average) : matchedSpeedEase(0, 0);
-    tl.fromTo(v, { cameraT: waypoint }, { cameraT: s.to, duration: s.duration, ease, immediateRender: waypoint === 0 }, s.start);
-    waypoint = s.to;
-  }
 
   // Each painting's panel appears as the camera settles and leaves before it turns away.
   for (const s of TIMELINE_PLAN) {
