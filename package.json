@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/lib/museum/deviceTier.test.mjs",
     "artworks": "node scripts/optimize-artworks.mjs"
   },
   "dependencies": {
