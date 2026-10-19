@@ -123,6 +123,9 @@ class PlanarReflection {
     mirror.far = camera.far;
     mirror.updateMatrixWorld();
     mirror.projectionMatrix.copy(camera.projectionMatrix);
+    // The mirror camera's up is reflected and its right is not, so its picture is the reflection flipped left to
+    // right: a sideways lens shift (see MuseumCamera) must flip with it for its frustum to cover the reflected view.
+    mirror.projectionMatrix.elements[8] *= -1;
 
     this.textureMatrix.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
     this.textureMatrix.multiply(mirror.projectionMatrix).multiply(mirror.matrixWorldInverse).multiply(floor.matrixWorld);

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { invalidate } from "@react-three/fiber";
 import { ConeGeometry, CylinderGeometry } from "three";
-import { DOORWAY, FACADE, INNER_FACADE, PLANTER_SPOTS, PORTICO } from "@/lib/museum/layout";
+import { DOORWAY, FACADE, INNER_FACADE, PLANTER_SPOTS, PORTICO, TABLET } from "@/lib/museum/layout";
 import { archBandGeometry, archedWallGeometry, bevelledBox, frameRingGeometry, metricBox } from "@/lib/museum/geometry";
 import { INSCRIPTION_CANVAS, createInscriptionTextures, type InscriptionTextures } from "@/lib/museum/textures";
 import { bakeFacade, bakeInnerFacade } from "@/lib/museum/lightmaps";
@@ -32,9 +32,6 @@ const PORCH_INLAY: InlayStrip[] = [
 const FALLBACK_SERIF = 'Georgia, "Times New Roman", serif';
 /** Lanterns hang on the portal pilasters at this height, scaled to suit the 8 m doorway. */
 const LANTERN = { y: 4.2, scale: 1.75 } as const;
-
-/** The carved tablet sits in the lunette between the door surround and the porch vault. */
-const TABLET = { width: 4.3, centerY: 9.3 } as const;
 
 /**
  * The exterior: an outer facade whose great arch frames a recessed portico,

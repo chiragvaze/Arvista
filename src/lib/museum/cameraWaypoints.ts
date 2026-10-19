@@ -1,5 +1,5 @@
-import { CatmullRomCurve3, Matrix4, Quaternion, Vector3 } from "three";
-import { CORRIDOR, EYE_HEIGHT, PORTICO } from "./layout";
+import { CatmullRomCurve3, Matrix4, Quaternion, Vector3, type PerspectiveCamera } from "three";
+import { CORRIDOR, DOORWAY, EYE_HEIGHT, PORTICO, TABLET } from "./layout";
 import { galleryLayout, type PaintingLayout } from "./galleryLayout";
 
 export type Vec3 = readonly [number, number, number];
@@ -14,6 +14,13 @@ export interface CameraWaypoint extends CameraPose {
   id: string;
   /** Optional framing for tall, narrow viewports (phones in portrait). */
   portrait?: Partial<CameraPose>;
+  /**
+   * Shift-lens framing. The camera itself faces `facing` here, and the view toward `target` is kept by shifting
+   * the lens instead (see LensShift), so a camera facing a wall square on keeps the wall's verticals and
+   * horizontals straight however far its view is aimed up or to the side. The shift is fitted so that `subject`,
+   * the corners of what is framed (a painting's frame, the entrance's doorway), keeps its place and size on screen.
+   */
+  lens?: { facing: Vec3; subject: readonly Vec3[] };
 }
 
 /**
@@ -87,6 +94,9 @@ function paintingWaypoints({ painting, side, position, frame }: PaintingLayout):
   const standOff = viewDistance(frame.outerHeight);
   // Portrait framing scales with the frame too, so a smaller canvas still fills a phone or tablet screen.
   const portraitScale = Math.min(1, standOff / VIEW_DISTANCE_RANGE[1]);
+  const frameCorners = [-1, 1].flatMap((dy) =>
+    [-1, 1].map((dz): Vec3 => [wallX, centerY + (dy * frame.outerHeight) / 2, z + (dz * frame.outerWidth) / 2]),
+  );
   return [
     {
       // Walking down the centre line, glancing toward the painting's wall.
@@ -96,10 +106,12 @@ function paintingWaypoints({ painting, side, position, frame }: PaintingLayout):
     },
     {
       // Square on to the painting. Facing the wall, screen-right points along `side` in z, so aiming
-      // slightly that way places the painting left of centre, clear of the information panel.
+      // slightly that way places the painting left of centre, clear of the information panel. The camera
+      // faces the wall level and square on and shifts its lens toward the target, so the frame stays rectangular.
       id: `${painting.id}:view`,
       position: [wallX - side * standOff, EYE_HEIGHT, z + side * 0.15],
       target: [wallX, centerY - 0.05, z + side * standOff * VIEW_AIM_OFFSET],
+      lens: { facing: [side, 0, 0], subject: frameCorners },
       portrait: {
         // Further back and aimed low so the painting sits above the bottom information sheet.
         position: [wallX - side * VIEW_DISTANCE_PORTRAIT * portraitScale, EYE_HEIGHT, z],
@@ -126,6 +138,13 @@ export function buildCameraRoute(layouts: readonly PaintingLayout[]): CameraRout
       id: "entrance",
       position: [0, 2.0, PORTICO.depth + 13],
       target: [0, 4.4, 0],
+      // Looking up at the facade, the camera faces it level and square on and shifts its lens up instead, so the
+      // arch, pilasters and doorway stand upright. The shift is fitted to the doorway from its threshold up to the
+      // inscription above it, which keep their place on screen.
+      lens: {
+        facing: [0, 0, -1],
+        subject: [0, TABLET.centerY].flatMap((y) => [-1, 1].map((side): Vec3 => [side * DOORWAY.halfWidth, y, 0])),
+      },
       // Narrow screens stand further back to keep the whole arch in frame, but close enough to read the inscription.
       portrait: { position: [0, 2.0, PORTICO.depth + 15.5], target: [0, 4.9, 0] },
     },
@@ -169,7 +188,92 @@ export function buildCameraRoute(layouts: readonly PaintingLayout[]): CameraRout
 export const cameraRoute: CameraRoute = buildCameraRoute(galleryLayout);
 export const cameraWaypoints = cameraRoute.waypoints;
 
+/**
+ * An off-axis (shifted) lens, as on a view camera with a rising and shifting front: the camera faces one way and
+ * the picture is centred on another direction, so lines parallel to the image plane stay parallel on screen.
+ * `x` and `y` are where the picture's centre lies on the image plane, in tangents right of and above the camera's
+ * axis; `scale` widens the view by that factor. { x: 0, y: 0, scale: 1 } is the plain centred lens.
+ */
+export interface LensShift {
+  x: number;
+  y: number;
+  scale: number;
+}
+
+/**
+ * Applies a lens shift to a camera's projection. The view offset is part of the camera's own projection, so it
+ * survives every later updateProjectionMatrix (a resize or a change of pixel ratio); it is recomputed here from
+ * the camera's current field of view and aspect each time.
+ */
+export function applyLens(camera: PerspectiveCamera, { x, y, scale }: LensShift): void {
+  if (x === 0 && y === 0 && scale === 1) {
+    if (camera.view?.enabled) camera.clearViewOffset();
+    return;
+  }
+  // In units of the unshifted view's height (setViewOffset sets the aspect to fullWidth / fullHeight): a window
+  // `scale` times as large, centred where the tangents (x, y) fall.
+  const { aspect } = camera;
+  const tan = Math.tan(((camera.fov / 2) * Math.PI) / 180) / camera.zoom;
+  camera.setViewOffset(aspect, 1, (aspect * (1 - scale)) / 2 + x / (2 * tan), (1 - scale) / 2 - y / (2 * tan), aspect * scale, scale);
+}
+
 const UP = new Vector3(0, 1, 0);
+
+/** Heading about the vertical (from -Z toward +X) and elevation of a unit direction. */
+function yawOf(direction: Vector3): number {
+  return Math.atan2(direction.x, -direction.z);
+}
+function pitchOf(direction: Vector3): number {
+  return Math.asin(Math.min(1, Math.max(-1, direction.y)));
+}
+function wrapAngle(angle: number): number {
+  return Math.atan2(Math.sin(angle), Math.cos(angle));
+}
+
+/** A camera's right and up axes as lookAt builds them with a fixed world up, for a unit forward direction. */
+function cameraAxes(forward: Vector3, outRight: Vector3, outUp: Vector3): void {
+  outRight.crossVectors(forward, UP).normalize();
+  outUp.crossVectors(outRight, forward);
+}
+
+/** Where a camera-relative vector falls on a camera's image plane, in tangents right of and above its axis. */
+function tangents(v: Vector3, forward: Vector3, right: Vector3, up: Vector3): [number, number] {
+  const depth = v.dot(forward);
+  return [v.dot(right) / depth, v.dot(up) / depth];
+}
+
+/**
+ * At a shift-lens waypoint, how to adjust the lens that centres the look direction (as the rig computes it
+ * throughout a turn) for the subject's corners to stay as close to their places on screen without a shift as one
+ * lens can keep them: a least-squares fit, which keeps the subject's centre and its mean size. Returned as
+ * [x and y to add, log of the scale]. A surface seen square on keeps its true proportions, so where the plain view
+ * stretched it one way (off-axis or foreshortened) its width and height differ by that stretch, split evenly.
+ */
+function lensTrim(position: Vector3, look: Vector3, facing: Vector3, subject: readonly Vec3[]): [number, number, number] {
+  const lookRight = new Vector3();
+  const lookUp = new Vector3();
+  const right = new Vector3();
+  const up = new Vector3();
+  cameraAxes(look, lookRight, lookUp);
+  cameraAxes(facing, right, up);
+  const corners = subject.map((corner) => new Vector3(...corner).sub(position));
+  const plain = corners.map((v) => tangents(v, look, lookRight, lookUp));
+  const shifted = corners.map((v) => tangents(v, facing, right, up));
+  // Fit shifted ≈ lens + scale × plain: the corners' screen positions through the lens are (shifted - lens) / scale.
+  const mean = (points: [number, number][]) => points.reduce(([x, y], [px, py]) => [x + px / points.length, y + py / points.length], [0, 0]);
+  const [plainX, plainY] = mean(plain);
+  const [shiftedX, shiftedY] = mean(shifted);
+  let covariance = 0;
+  let variance = 0;
+  plain.forEach(([px, py], k) => {
+    covariance += (px - plainX) * (shifted[k][0] - shiftedX) + (py - plainY) * (shifted[k][1] - shiftedY);
+    variance += (px - plainX) ** 2 + (py - plainY) ** 2;
+  });
+  const scale = covariance / variance;
+  const [centredX, centredY] = tangents(look, facing, right, up);
+  return [shiftedX - scale * plainX - centredX, shiftedY - scale * plainY - centredY, Math.log(scale)];
+}
+
 /**
  * Samples per segment for the distance and turn-angle tables. Lookups interpolate linearly between samples, so
  * the rate of motion steps slightly at each sample; this many keeps those steps well below a degree per second.
@@ -277,6 +381,12 @@ interface TimedMove {
  *   whenever the route holds. Orientation is rebuilt with lookAt and a fixed
  *   world up every frame: the camera never rolls, and because neighbouring
  *   directions are always less than 180° apart it always turns the short way.
+ * - Where a waypoint has a shift lens, the camera body turns from the look
+ *   direction to its `facing` as the camera turns toward the waypoint, and
+ *   back as it turns away, by the same share of each turn (eased in and out).
+ *   A lens shift keeps the look direction at the centre of the picture, and
+ *   by the same share the shift is fitted to the subject (see lensTrim).
+ *   Between other waypoints the lens is plain.
  *
  * At every waypoint the pose is exactly the waypoint's own.
  */
@@ -287,10 +397,17 @@ export class CameraRig {
   private readonly turnTables: Float32Array[] = [];
   /** Cumulative turn angle (radians) along the direction spline at each waypoint. */
   private readonly turnAt: number[] = [0];
+  /** At each waypoint, the camera body's turn [yaw, pitch] (radians) from the look direction to its `facing`. */
+  private readonly bodyTurns: (readonly [number, number])[];
+  /** At each waypoint, the lens trim that fits the shift to its subject (see lensTrim). */
+  private readonly lensTrims: (readonly [number, number, number])[];
   private readonly moves: TimedMove[] = [];
   private readonly turn: MonotoneCurve;
   private readonly last: number;
   private readonly direction = new Vector3();
+  private readonly facing = new Vector3();
+  private readonly right = new Vector3();
+  private readonly up = new Vector3();
   private readonly lookTarget = new Vector3();
   private readonly matrix = new Matrix4();
 
@@ -302,6 +419,14 @@ export class CameraRig {
     this.positions = new CatmullRomCurve3(positions, false, "centripetal");
     this.directions = new CatmullRomCurve3(directions, false, "centripetal");
     this.last = waypoints.length - 1;
+    const facings = waypoints.map((w) => (w.lens ? new Vector3(...w.lens.facing).normalize() : null));
+    this.bodyTurns = facings.map((facing, i) =>
+      facing ? [wrapAngle(yawOf(facing) - yawOf(directions[i])), pitchOf(facing) - pitchOf(directions[i])] : [0, 0],
+    );
+    this.lensTrims = facings.map((facing, i) => {
+      const subject = waypoints[i].lens?.subject;
+      return facing && subject ? lensTrim(positions[i], directions[i], facing, subject) : [0, 0, 0];
+    });
 
     // Distance travelled and angle turned along each segment, at evenly spaced spline parameters.
     const lengths: number[] = [];
@@ -350,8 +475,11 @@ export class CameraRig {
     this.turn = new MonotoneCurve(knotTimes, knotTurns);
   }
 
-  /** `time` is the position on the scroll timeline, in timeline units. */
-  sample(time: number, outPosition: Vector3, outQuaternion: Quaternion): void {
+  /**
+   * `time` is the position on the scroll timeline, in timeline units. Without `outLens` the camera always faces
+   * its look direction; with it, the camera faces as described above and `outLens` receives the matching shift.
+   */
+  sample(time: number, outPosition: Vector3, outQuaternion: Quaternion, outLens?: LensShift): void {
     // The step under way, or the waypoint the camera has come to rest at.
     let segment = 0;
     let fraction = 0;
@@ -377,7 +505,34 @@ export class CameraRig {
     const share = span > 1e-9 ? Math.min(1, Math.max(0, (turned - this.turnAt[i]) / span)) : 0;
     this.directions.getPoint((i + paramForFraction(this.turnTables[i], share)) / this.last, this.direction).normalize();
 
-    this.lookTarget.copy(outPosition).add(this.direction);
+    // The camera body's turn away from the look direction, blended between this turn's two waypoints.
+    const blend = share * share * (3 - 2 * share);
+    const [yawFrom, pitchFrom] = this.bodyTurns[i];
+    const [yawTo, pitchTo] = this.bodyTurns[i + 1];
+    const yawTurn = yawFrom + (yawTo - yawFrom) * blend;
+    const pitchTurn = pitchFrom + (pitchTo - pitchFrom) * blend;
+    if (!outLens || (yawTurn === 0 && pitchTurn === 0)) {
+      if (outLens) {
+        outLens.x = 0;
+        outLens.y = 0;
+        outLens.scale = 1;
+      }
+      this.lookTarget.copy(outPosition).add(this.direction);
+      outQuaternion.setFromRotationMatrix(this.matrix.lookAt(outPosition, this.lookTarget, UP));
+      return;
+    }
+    const yaw = yawOf(this.direction) + yawTurn;
+    const pitch = pitchOf(this.direction) + pitchTurn;
+    this.facing.set(Math.cos(pitch) * Math.sin(yaw), Math.sin(pitch), -Math.cos(pitch) * Math.cos(yaw));
+    this.lookTarget.copy(outPosition).add(this.facing);
     outQuaternion.setFromRotationMatrix(this.matrix.lookAt(outPosition, this.lookTarget, UP));
+    // The lens that centres the look direction on the camera's own image plane, trimmed toward the subject's fit.
+    cameraAxes(this.facing, this.right, this.up);
+    const depth = this.direction.dot(this.facing);
+    const [xFrom, yFrom, scaleFrom] = this.lensTrims[i];
+    const [xTo, yTo, scaleTo] = this.lensTrims[i + 1];
+    outLens.x = this.direction.dot(this.right) / depth + xFrom + (xTo - xFrom) * blend;
+    outLens.y = this.direction.dot(this.up) / depth + yFrom + (yTo - yFrom) * blend;
+    outLens.scale = Math.exp(scaleFrom + (scaleTo - scaleFrom) * blend);
   }
 }

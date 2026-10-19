@@ -40,6 +40,9 @@ export const DOORWAY = {
   maxOpenAngle: (92 * Math.PI) / 180,
 } as const;
 
+/** The carved tablet sits in the lunette between the door surround and the porch vault. */
+export const TABLET = { width: 4.3, centerY: 9.3 } as const;
+
 /** Bays: an entry bay, one bay per painting, a bay with a bench, and a final bay before the end wall. */
 export function corridorBayCount(paintingCount: number): number {
   return Math.max(paintingCount, 1) + 3;

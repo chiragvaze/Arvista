@@ -738,6 +738,8 @@
     margin-block: auto;
     padding: 0.7rem 0.9rem 0;
     outline-offset: -5px;
+    /* Its width comes from the screen, not its content, so the controls can respond to it (see below). */
+    container-type: inline-size;
   }
 
   .panelIndex {
@@ -815,6 +817,19 @@
 
   .panelNext {
     padding: 0 0.85rem;
+  }
+}
+
+/* Phones narrower than about 810 px when turned sideways leave the card too narrow for both controls on one
+   line (they need about 16.3rem): Next moves to a full-width line of its own instead of being cut off. */
+@container (max-width: 16rem) {
+  .panelActions {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+  }
+
+  .panelNext {
+    flex: 1 0 100%;
   }
 }
 
