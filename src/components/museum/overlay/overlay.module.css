@@ -107,6 +107,14 @@
   text-shadow: 0 1px 12px rgb(8 5 3 / 0.9);
 }
 
+/* The page heading is visually hidden (the carved inscription carries the name). When keyboard navigation
+   focuses it, the ring is drawn on the attribution line, which shows the same words. */
+.hero > h1:focus-visible ~ .heroAttribution {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 6px;
+  box-shadow: 0 0 0 6px var(--color-night);
+}
+
 .heroTagline {
   margin: 0;
   font-family: var(--font-serif);

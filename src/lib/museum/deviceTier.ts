@@ -15,11 +15,16 @@ export function detectQualityTier(): QualityTier {
   return "high";
 }
 
-/** True when a WebGL context can actually be created on this device. */
+/**
+ * True when a WebGL 2 context can actually be created on this device. three.js (r163 and later) renders with
+ * WebGL 2 only, so a WebGL 1 context is no use: the museum would fail to start and fall back anyway, after
+ * downloading the 3D code and logging errors. (A device can still fail later, e.g. on a driver problem; the
+ * canvas's error boundary covers that.)
+ */
 export function canUseWebGL(): boolean {
   try {
     const canvas = document.createElement("canvas");
-    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl2");
     if (!gl) return false;
     gl.getExtension("WEBGL_lose_context")?.loseContext();
     return true;

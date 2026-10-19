@@ -9,6 +9,9 @@
   --color-brass: #a88752;
   /* Brass lightened for text and hairlines on dark backgrounds */
   --color-gold: #c4a46e;
+  /* Focus-ring gold: a step lighter than the gold above, so that with the night band beside it one of the two
+     reaches 3:1 against any background (see :focus-visible) */
+  --color-focus: #d4b682;
   --color-muted: #7a6e60;
 }
 
@@ -31,9 +34,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Two-colour focus ring: gold, with the gap inside it filled in night. Focusable controls sit on ivory cards, on
+   dark sections and over the 3D scene (bright walls and dark corners alike); gold alone is too faint on the light
+   ones (about 2:1), so the dark band carries the contrast there and the gold carries it on dark surfaces. Between
+   them every background gets at least 3:1 from one of the two (the worst case, a mid-tone, is 3.2:1). */
 :focus-visible {
-  outline: 2px solid var(--color-gold);
+  outline: 2px solid var(--color-focus);
   outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--color-night);
 }
 
 .skip-link {
