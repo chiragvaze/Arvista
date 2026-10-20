@@ -21,6 +21,7 @@ import { PaintingInformation } from "./overlay/PaintingInformation";
 import { ArtistFinale } from "./overlay/ArtistFinale";
 import { ChapterNav } from "./overlay/ChapterNav";
 import { LoadingScreen } from "./overlay/LoadingScreen";
+import { ErrorBoundary } from "./ErrorBoundary";
 import styles from "./overlay/overlay.module.css";
 
 // three.js and the scene graph load in a separate client-only chunk.
@@ -154,7 +155,10 @@ export function MuseumExperience() {
       <div className={styles.stage}>
         {mode === "3d" && capabilities && (
           <div className={styles.canvas}>
-            <MuseumCanvas store={store} quality={capabilities.quality} onReady={onReady} onError={onError} />
+            {/* MuseumCanvas has a boundary of its own, but a chunk that fails to download throws before it exists. */}
+            <ErrorBoundary fallback={null} onError={onError}>
+              <MuseumCanvas store={store} quality={capabilities.quality} onReady={onReady} onError={onError} />
+            </ErrorBoundary>
           </div>
         )}
         <div className={styles.vignette} aria-hidden="true" />

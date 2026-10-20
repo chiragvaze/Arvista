@@ -1,0 +1,3 @@
+# The original photographs stay in the repository (npm run artworks reads them) but are not deployed: the site
+# only uses the display copies in public/artworks/display.
+/public/artworks/paintings

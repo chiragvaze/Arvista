@@ -3,6 +3,9 @@
  * collection and the closing section. ARVISTA is the gallery; Chirag Vaze is
  * the artist. Edit the statement freely; it is draft copy.
  */
+/** Production origin: the base for canonical, Open Graph, robots and sitemap URLs. */
+export const SITE_URL = "https://arvista.vercel.app";
+
 export const GALLERY = {
   name: "ARVISTA",
   subtitle: "The Art Gallery",
