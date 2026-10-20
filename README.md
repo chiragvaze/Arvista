@@ -21,7 +21,7 @@ Paintings are defined in [`src/content/paintings.ts`](src/content/paintings.ts) 
 
 To add a painting:
 
-1. Put the original photograph in `public/artworks/paintings/<id>.jpeg` (it is never modified).
+1. Put the original photograph in `public/artworks/paintings/<id>.jpeg` (it is never modified, and `.vercelignore` keeps it out of deployments).
 2. Run `npm run artworks`. This writes resized WebP display copies to `public/artworks/display/` (2048 px and 1024 px, content-hashed file names so caches never serve an outdated image) and their sizes to `src/content/artwork-images.generated.json`. Images are only resized and converted to sRGB: no colour changes, sharpening or upscaling.
    - To remove unpainted canvas from a photograph, add a measured crop for that painting to `CROPS` in `scripts/optimize-artworks.mjs`. Crops are never detected automatically. *The Silent Ruler* uses one (see the comment there).
 3. Add an entry to `paintings.ts` with the same `id`: title, medium, `creationDate` (YYYY-MM-DD), `dimensions` as written, `physicalSize` in cm, description and order.
@@ -45,8 +45,8 @@ To regenerate them, download each asset's `1K-JPG` pack, extract each into a fol
 
 ```
 src/
-  app/                      layout, page, global styles
-  content/site.ts           gallery name, tagline, artist name and (draft) artist statement
+  app/                      layout (metadata), page, global styles, robots, sitemap, share image (opengraph-image.jpg)
+  content/site.ts           production URL (SITE_URL), gallery name, tagline, artist name and (draft) artist statement
   content/paintings.ts      artwork data
   content/artwork-images.generated.json  display image paths and sizes (npm run artworks)
   types/artwork.ts          Painting type
